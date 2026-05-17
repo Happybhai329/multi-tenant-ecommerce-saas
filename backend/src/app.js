@@ -4,6 +4,7 @@ import helmet from 'helmet'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import { notFound, errorHandler } from './middleware/errorHandler.js'
+import authRoutes from './routes/authRoutes.js'
 
 const app = express()
 
@@ -24,7 +25,7 @@ app.get('/', (req, res) => {
   res.json({ message: 'API is running...' })
 })
 
-// routes go here
+app.use('/api/auth', authRoutes)
 
 app.use(notFound)
 app.use(errorHandler)
