@@ -5,6 +5,7 @@ import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 import { notFound, errorHandler } from './middleware/errorHandler.js'
 import authRoutes from './routes/authRoutes.js'
+import testRoutes from './routes/testRoutes.js'
 
 const app = express()
 
@@ -26,6 +27,7 @@ app.get('/', (req, res) => {
 })
 
 app.use('/api/auth', authRoutes)
+app.use('/api/test', testRoutes)
 
 app.use(notFound)
 app.use(errorHandler)
