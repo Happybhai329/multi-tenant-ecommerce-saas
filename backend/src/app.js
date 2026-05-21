@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser'
 import { notFound, errorHandler } from './middleware/errorHandler.js'
 import authRoutes from './routes/authRoutes.js'
 import testRoutes from './routes/testRoutes.js'
+import storeRoutes from './routes/storeRoutes.js'
 
 const app = express()
 
@@ -28,6 +29,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes)
 app.use('/api/test', testRoutes)
+app.use('/api/stores', storeRoutes)
 
 app.use(notFound)
 app.use(errorHandler)
