@@ -1,0 +1,81 @@
+import mongoose from 'mongoose'
+
+const productSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: [true, 'Product title is required'],
+      trim: true,
+      maxlength: [200, 'Title cannot exceed 200 characters'],
+    },
+    slug: {
+      type: String,
+      lowercase: true,
+      trim: true,
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: [2000, 'Description cannot exceed 2000 characters'],
+      default: '',
+    },
+    price: {
+      type: Number,
+      required: [true, 'Price is required'],
+      min: [0, 'Price cannot be negative'],
+    },
+    comparePrice: {
+      type: Number,
+      min: [0, 'Compare price cannot be negative'],
+      default: null,
+    },
+    category: {
+      type: String,
+      required: [true, 'Category is required'],
+      trim: true,
+    },
+    images: {
+      type: [String],
+      default: [],
+    },
+    stock: {
+      type: Number,
+      required: [true, 'Stock is required'],
+      min: [0, 'Stock cannot be negative'],
+      default: 0,
+    },
+    status: {
+      type: String,
+      enum: ['draft', 'published'],
+      default: 'draft',
+    },
+    store: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Store',
+      required: [true, 'Store is required'],
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Creator is required'],
+    },
+  },
+  { timestamps: true }
+)
+
+productSchema.pre('validate', function () {
+  if (this.title && (!this.slug || this.isModified('title'))) {
+    this.slug = this.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+  }
+})
+
+productSchema.index({ slug: 1, store: 1 }, { unique: true })
+productSchema.index({ store: 1, status: 1 })
+productSchema.index({ category: 1 })
+
+const Product = mongoose.model('Product', productSchema)
+
+export default Product

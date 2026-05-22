@@ -7,6 +7,7 @@ import { notFound, errorHandler } from './middleware/errorHandler.js'
 import authRoutes from './routes/authRoutes.js'
 import testRoutes from './routes/testRoutes.js'
 import storeRoutes from './routes/storeRoutes.js'
+import productRoutes from './routes/productRoutes.js'
 
 const app = express()
 
@@ -30,6 +31,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes)
 app.use('/api/test', testRoutes)
 app.use('/api/stores', storeRoutes)
+app.use('/api/products', productRoutes)
 
 app.use(notFound)
 app.use(errorHandler)
