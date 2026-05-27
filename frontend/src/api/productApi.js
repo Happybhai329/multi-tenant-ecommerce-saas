@@ -1,5 +1,15 @@
 import api from './axios'
 
+// GET /api/products — fetch all published products (public)
+export const fetchPublicProducts = (params = {}) => {
+  return api.get('/products', { params })
+}
+
+// GET /api/products/:slug — fetch a single product by slug (public)
+export const fetchProductBySlug = (slug) => {
+  return api.get(`/products/${slug}`)
+}
+
 // GET /api/products?mine=true — fetch vendor's own products (all statuses)
 export const fetchVendorProducts = () => {
   return api.get('/products', { params: { mine: 'true' } })

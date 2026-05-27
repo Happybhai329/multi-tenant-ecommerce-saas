@@ -1,0 +1,82 @@
+import { useSelector, useDispatch } from 'react-redux'
+import { Link, NavLink } from 'react-router-dom'
+import { logout } from '../features/auth/authSlice'
+
+function Navbar() {
+  const { token, user } = useSelector((state) => state.auth)
+  const dispatch = useDispatch()
+
+  const handleLogout = () => {
+    dispatch(logout())
+  }
+
+  const getDashboardPath = () => {
+    if (!user) return '/'
+    if (user.role === 'admin') return '/admin/dashboard'
+    if (user.role === 'vendor') return '/vendor/dashboard'
+    return '/customer/dashboard'
+  }
+
+  const navLinkClass = ({ isActive }) =>
+    `text-sm font-medium transition-colors ${
+      isActive ? 'text-white' : 'text-gray-400 hover:text-white'
+    }`
+
+  return (
+    <nav className="bg-gray-900 border-b border-gray-800 px-4 py-3">
+      <div className="max-w-7xl mx-auto flex items-center justify-between">
+        {/* Left — Logo + Nav Links */}
+        <div className="flex items-center gap-6">
+          <Link to="/" className="text-lg font-bold tracking-tight text-white">
+            Multi-Tenant <span className="text-blue-500">Store</span>
+          </Link>
+
+          <div className="hidden sm:flex items-center gap-4">
+            <NavLink to="/stores" className={navLinkClass}>Stores</NavLink>
+            <NavLink to="/products" className={navLinkClass}>Products</NavLink>
+          </div>
+        </div>
+
+        {/* Right — Auth */}
+        <div className="flex items-center gap-3">
+          {token && user ? (
+            <>
+              <span className="text-sm text-gray-400 hidden md:inline">
+                {user.name}
+              </span>
+              <Link
+                to={getDashboardPath()}
+                className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+              >
+                Dashboard
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="px-3 py-1.5 text-sm font-medium text-gray-300 hover:text-white bg-gray-800 hover:bg-gray-700 rounded-md transition-colors cursor-pointer"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="px-3 py-1.5 text-sm font-medium text-gray-300 hover:text-white transition-colors"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/register"
+                className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+              >
+                Register
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
+    </nav>
+  )
+}
+
+export default Navbar
