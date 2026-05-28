@@ -19,6 +19,10 @@ import StorePage from '../pages/storefront/StorePage'
 import ProductListPage from '../pages/storefront/ProductListPage'
 import ProductPage from '../pages/storefront/ProductPage'
 
+// Cart pages
+import CartPage from '../pages/cart/CartPage'
+import CheckoutPage from '../pages/cart/CheckoutPage'
+
 // Dashboard pages
 import CustomerDashboard from '../pages/CustomerDashboard'
 import AdminDashboard from '../pages/AdminDashboard'
@@ -46,6 +50,10 @@ function AppRouter() {
           <Route path="/stores/:slug" element={<StorePage />} />
           <Route path="/products" element={<ProductListPage />} />
           <Route path="/products/:slug" element={<ProductPage />} />
+
+          {/* Cart */}
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
         </Route>
 
         {/* ── Customer Dashboard ── */}

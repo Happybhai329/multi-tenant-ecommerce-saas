@@ -1,14 +1,22 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
 import { fetchProductBySlug } from '../../api/productApi'
+import { addToCart, selectCartItems } from '../../features/cart/cartSlice'
+import { useToast } from '../../components/ToastContext'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import ErrorAlert from '../../components/ErrorAlert'
 
 function ProductPage() {
   const { slug } = useParams()
+  const dispatch = useDispatch()
+  const { showToast } = useToast()
+  const cartItems = useSelector(selectCartItems)
+
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [addedFeedback, setAddedFeedback] = useState(false)
 
   const loadProduct = async () => {
     setLoading(true)
@@ -27,12 +35,27 @@ function ProductPage() {
     loadProduct()
   }, [slug])
 
+  const handleAddToCart = () => {
+    if (!product || product.stock <= 0) return
+
+    dispatch(addToCart(product))
+    showToast(`${product.title} added to cart`, 'success')
+
+    // Brief visual feedback on the button
+    setAddedFeedback(true)
+    setTimeout(() => setAddedFeedback(false), 1500)
+  }
+
   if (loading) return <LoadingSpinner message="Loading product..." />
   if (error) return <ErrorAlert message={error} onRetry={loadProduct} />
   if (!product) return <ErrorAlert message="Product not found" />
 
   const hasImage = product.images && product.images.length > 0 && product.images[0]
   const inStock = product.stock > 0
+
+  // Check if already in cart and how many
+  const cartItem = cartItems.find((item) => item._id === product._id)
+  const qtyInCart = cartItem ? cartItem.quantity : 0
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -99,17 +122,36 @@ function ProductPage() {
             </div>
           )}
 
-          {/* Add to Cart Placeholder */}
+          {/* Add to Cart Button */}
           <button
+            onClick={handleAddToCart}
             disabled={!inStock}
             className={`w-full py-3 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
-              inStock
-                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+              !inStock
+                ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                : addedFeedback
+                ? 'bg-green-600 text-white'
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
             }`}
           >
-            {inStock ? 'Add to Cart' : 'Out of Stock'}
+            {!inStock
+              ? 'Out of Stock'
+              : addedFeedback
+              ? 'Added ✓'
+              : qtyInCart > 0
+              ? `Add Another (${qtyInCart} in cart)`
+              : 'Add to Cart'}
           </button>
+
+          {/* View Cart link when items in cart */}
+          {qtyInCart > 0 && !addedFeedback && (
+            <Link
+              to="/cart"
+              className="block text-center text-sm text-blue-400 hover:text-blue-300 mt-3 transition-colors"
+            >
+              View Cart →
+            </Link>
+          )}
 
           {/* Store Info */}
           {product.store && (
