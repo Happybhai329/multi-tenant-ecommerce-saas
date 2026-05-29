@@ -36,6 +36,9 @@ function Navbar() {
           <div className="hidden sm:flex items-center gap-4">
             <NavLink to="/stores" className={navLinkClass}>Stores</NavLink>
             <NavLink to="/products" className={navLinkClass}>Products</NavLink>
+            {token && user?.role === 'customer' && (
+              <NavLink to="/orders" className={navLinkClass}>My Orders</NavLink>
+            )}
           </div>
         </div>
 

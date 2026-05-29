@@ -23,6 +23,10 @@ import ProductPage from '../pages/storefront/ProductPage'
 import CartPage from '../pages/cart/CartPage'
 import CheckoutPage from '../pages/cart/CheckoutPage'
 
+// Order pages
+import OrdersPage from '../pages/orders/OrdersPage'
+import OrderDetailPage from '../pages/orders/OrderDetailPage'
+
 // Dashboard pages
 import CustomerDashboard from '../pages/CustomerDashboard'
 import AdminDashboard from '../pages/AdminDashboard'
@@ -33,6 +37,7 @@ import VendorProductListPage from '../pages/vendor/ProductListPage'
 import AddProductPage from '../pages/vendor/AddProductPage'
 import EditProductPage from '../pages/vendor/EditProductPage'
 import VendorOrdersPage from '../pages/vendor/VendorOrdersPage'
+import VendorOrderDetailPage from '../pages/vendor/VendorOrderDetailPage'
 import VendorSettingsPage from '../pages/vendor/VendorSettingsPage'
 
 function AppRouter() {
@@ -54,6 +59,24 @@ function AppRouter() {
           {/* Cart */}
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
+
+          {/* Customer Orders */}
+          <Route
+            path="/orders"
+            element={
+              <ProtectedRoute allowedRoles={['customer']}>
+                <OrdersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orders/:id"
+            element={
+              <ProtectedRoute allowedRoles={['customer']}>
+                <OrderDetailPage />
+              </ProtectedRoute>
+            }
+          />
         </Route>
 
         {/* ── Customer Dashboard ── */}
@@ -80,6 +103,7 @@ function AppRouter() {
           <Route path="products/new" element={<AddProductPage />} />
           <Route path="products/:id/edit" element={<EditProductPage />} />
           <Route path="orders" element={<VendorOrdersPage />} />
+          <Route path="orders/:id" element={<VendorOrderDetailPage />} />
           <Route path="settings" element={<VendorSettingsPage />} />
         </Route>
 
