@@ -87,7 +87,7 @@ function CheckoutPage() {
 
       // Navigate to the first order's detail page (or orders list if multiple)
       if (data.orders.length === 1) {
-        navigate(`/orders/${data.orders[0]._id}`, { replace: true })
+        navigate(`/orders/${data.orders[0]._id}/pay`, { replace: true })
       } else {
         navigate('/orders', { replace: true })
       }

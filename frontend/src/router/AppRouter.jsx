@@ -26,6 +26,7 @@ import CheckoutPage from '../pages/cart/CheckoutPage'
 // Order pages
 import OrdersPage from '../pages/orders/OrdersPage'
 import OrderDetailPage from '../pages/orders/OrderDetailPage'
+import PaymentPage from '../pages/orders/PaymentPage'
 
 // Dashboard pages
 import CustomerDashboard from '../pages/CustomerDashboard'
@@ -69,11 +70,19 @@ function AppRouter() {
               </ProtectedRoute>
             }
           />
-          <Route
+            <Route
             path="/orders/:id"
             element={
               <ProtectedRoute allowedRoles={['customer']}>
                 <OrderDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orders/:id/pay"
+            element={
+              <ProtectedRoute allowedRoles={['customer']}>
+                <PaymentPage />
               </ProtectedRoute>
             }
           />
