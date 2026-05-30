@@ -40,6 +40,19 @@ function OrderDetailPage() {
       : 'bg-yellow-900/50 text-yellow-300 border-yellow-800/50'
   }
 
+  // Order status timeline steps
+  const statusSteps = ['pending', 'processing', 'shipped', 'delivered']
+
+  const getStepState = (step) => {
+    if (!order) return 'upcoming'
+    if (order.orderStatus === 'cancelled') return step === 'pending' ? 'cancelled' : 'upcoming'
+    const currentIndex = statusSteps.indexOf(order.orderStatus)
+    const stepIndex = statusSteps.indexOf(step)
+    if (stepIndex < currentIndex) return 'completed'
+    if (stepIndex === currentIndex) return 'current'
+    return 'upcoming'
+  }
+
   if (loading) return <LoadingSpinner />
 
   if (error) {
@@ -91,6 +104,54 @@ function OrderDetailPage() {
         </div>
       </div>
 
+      {/* Order Status Timeline */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-6">
+        <h2 className="text-sm font-semibold text-white mb-4">Order Progress</h2>
+        <div className="flex items-center justify-between">
+          {statusSteps.map((step, index) => {
+            const state = getStepState(step)
+            return (
+              <div key={step} className="flex items-center flex-1">
+                <div className="flex flex-col items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold border-2 transition-all ${
+                    state === 'completed'
+                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
+                      : state === 'current'
+                      ? 'bg-blue-500/20 border-blue-500 text-blue-400 ring-4 ring-blue-500/10'
+                      : state === 'cancelled'
+                      ? 'bg-red-500/20 border-red-500 text-red-400'
+                      : 'bg-gray-800 border-gray-700 text-gray-500'
+                  }`}>
+                    {state === 'completed' ? (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      index + 1
+                    )}
+                  </div>
+                  <span className={`text-xs mt-2 capitalize ${
+                    state === 'completed' ? 'text-emerald-400' :
+                    state === 'current' ? 'text-blue-400' :
+                    state === 'cancelled' ? 'text-red-400' :
+                    'text-gray-500'
+                  }`}>
+                    {step}
+                  </span>
+                </div>
+                {index < statusSteps.length - 1 && (
+                  <div className={`flex-1 h-0.5 mx-2 mb-5 ${
+                    getStepState(statusSteps[index + 1]) === 'completed' || getStepState(statusSteps[index + 1]) === 'current'
+                      ? 'bg-emerald-500/40'
+                      : 'bg-gray-700'
+                  }`} />
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Items */}
         <div className="lg:col-span-2">
@@ -130,6 +191,51 @@ function OrderDetailPage() {
 
         {/* Sidebar */}
         <div className="space-y-4">
+          {/* Payment Information */}
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+              <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                <line x1="1" y1="10" x2="23" y2="10" />
+              </svg>
+              Payment Information
+            </h2>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Status</span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border capitalize ${getPaymentColor(order.paymentStatus)}`}>
+                  {order.paymentStatus}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Method</span>
+                <span className="text-white">Stripe</span>
+              </div>
+              {order.paymentStatus === 'paid' && order.updatedAt && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Paid on</span>
+                  <span className="text-white">
+                    {new Date(order.updatedAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Pay Now button for unpaid orders */}
+            {order.paymentStatus === 'pending' && (
+              <Link
+                to={`/orders/${order._id}/pay`}
+                className="block w-full text-center mt-4 py-2.5 text-sm font-medium rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
+              >
+                Pay Now
+              </Link>
+            )}
+          </div>
+
           {/* Order Summary */}
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
             <h2 className="text-sm font-semibold text-white mb-4">Order Summary</h2>

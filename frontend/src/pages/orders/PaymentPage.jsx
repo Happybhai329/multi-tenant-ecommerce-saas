@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link, Navigate } from 'react-router-dom'
+import { useParams, Link, Navigate, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { fetchOrderById } from '../../api/orderApi'
 import { createPaymentIntent } from '../../api/paymentApi'
@@ -7,6 +7,7 @@ import { createPaymentIntent } from '../../api/paymentApi'
 function PaymentPage() {
   const { id } = useParams()
   const { token, user } = useSelector((state) => state.auth)
+  const navigate = useNavigate()
 
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -632,12 +633,54 @@ function PaymentPage() {
                       {paymentData.paymentId}
                     </span>
                   </div>
-                  <div className="payment-detail-row">
+                <div className="payment-detail-row">
                     <span className="payment-detail-label">Status</span>
                     <span className="payment-detail-value" style={{ color: '#fbbf24' }}>
-                      Pending confirmation
+                      Awaiting confirmation
                     </span>
                   </div>
+                </div>
+
+                {/* Navigation to result pages */}
+                <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => navigate(`/payment/success?order=${order._id}`)}
+                    style={{
+                      flex: 1,
+                      padding: '10px 16px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: '#fff',
+                      background: 'rgba(52, 211, 153, 0.2)',
+                      border: '1px solid rgba(52, 211, 153, 0.3)',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => e.target.style.background = 'rgba(52, 211, 153, 0.3)'}
+                    onMouseLeave={(e) => e.target.style.background = 'rgba(52, 211, 153, 0.2)'}
+                  >
+                    Simulate Success
+                  </button>
+                  <button
+                    onClick={() => navigate(`/payment/failed?order=${order._id}`)}
+                    style={{
+                      flex: 1,
+                      padding: '10px 16px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: '#fff',
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => e.target.style.background = 'rgba(239, 68, 68, 0.25)'}
+                    onMouseLeave={(e) => e.target.style.background = 'rgba(239, 68, 68, 0.15)'}
+                  >
+                    Simulate Failure
+                  </button>
                 </div>
               </div>
             ) : (

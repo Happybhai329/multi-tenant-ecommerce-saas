@@ -107,6 +107,16 @@ function OrdersPage() {
                       Store: <span className="text-gray-400">{order.store.name}</span>
                     </p>
                   )}
+                  {order.paymentStatus === 'paid' && order.updatedAt && (
+                    <p className="text-xs text-emerald-500/80">
+                      Paid on{' '}
+                      {new Date(order.updatedAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </p>
+                  )}
                 </div>
 
                 {/* Right — Total + item count */}

@@ -27,6 +27,8 @@ import CheckoutPage from '../pages/cart/CheckoutPage'
 import OrdersPage from '../pages/orders/OrdersPage'
 import OrderDetailPage from '../pages/orders/OrderDetailPage'
 import PaymentPage from '../pages/orders/PaymentPage'
+import PaymentSuccessPage from '../pages/orders/PaymentSuccessPage'
+import PaymentFailedPage from '../pages/orders/PaymentFailedPage'
 
 // Dashboard pages
 import CustomerDashboard from '../pages/CustomerDashboard'
@@ -83,6 +85,22 @@ function AppRouter() {
             element={
               <ProtectedRoute allowedRoles={['customer']}>
                 <PaymentPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/payment/success"
+            element={
+              <ProtectedRoute allowedRoles={['customer']}>
+                <PaymentSuccessPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/payment/failed"
+            element={
+              <ProtectedRoute allowedRoles={['customer']}>
+                <PaymentFailedPage />
               </ProtectedRoute>
             }
           />

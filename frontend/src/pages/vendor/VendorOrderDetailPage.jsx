@@ -132,10 +132,50 @@ function VendorOrderDetailPage() {
         <div className="space-y-4">
           {/* Customer Info */}
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-            <h3 className="text-sm font-semibold text-white mb-3">Customer</h3>
+            <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+              <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Customer
+            </h3>
             <div className="text-sm text-gray-400 space-y-1">
               <p className="text-white font-medium">{order.customer?.name}</p>
               <p>{order.customer?.email}</p>
+            </div>
+          </div>
+
+          {/* Payment Information */}
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+              <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                <line x1="1" y1="10" x2="23" y2="10" />
+              </svg>
+              Payment
+            </h3>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Status</span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border capitalize ${getPaymentColor(order.paymentStatus)}`}>
+                  {order.paymentStatus}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Method</span>
+                <span className="text-white">Stripe</span>
+              </div>
+              {order.paymentStatus === 'paid' && order.updatedAt && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Paid on</span>
+                  <span className="text-white">
+                    {new Date(order.updatedAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

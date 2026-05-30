@@ -37,6 +37,10 @@ const paymentSchema = new mongoose.Schema(
       enum: ['pending', 'succeeded', 'failed'],
       default: 'pending',
     },
+    paidAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 )

@@ -18,7 +18,18 @@ app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true
 }))
-app.use(express.json())
+
+// ── Stripe webhook needs raw body — must be registered BEFORE express.json() ──
+// The route-level express.raw() in paymentRoutes handles this,
+// but we must also skip express.json() for the webhook path.
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/payments/webhook') {
+    next()
+  } else {
+    express.json()(req, res, next)
+  }
+})
+
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
 
