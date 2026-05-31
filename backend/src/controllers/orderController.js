@@ -1,6 +1,7 @@
 import Order from '../models/Order.js'
 import Product from '../models/Product.js'
 import Store from '../models/Store.js'
+import { VALID_ORDER_TRANSITIONS } from '../middleware/validate.js'
 
 // POST /api/orders — Create order(s) from cart items
 const createOrder = async (req, res) => {
@@ -178,4 +179,55 @@ const getOrderById = async (req, res) => {
   }
 }
 
-export { createOrder, getMyOrders, getOrderById }
+// PATCH /api/orders/:id/status — Update order status (vendor only)
+const updateOrderStatus = async (req, res) => {
+  try {
+    const { orderStatus } = req.body
+
+    // Find the order
+    const order = await Order.findById(req.params.id)
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' })
+    }
+
+    // Verify vendor owns the store this order belongs to
+    const store = await Store.findOne({ owner: req.user._id })
+    if (!store || order.store.toString() !== store._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized to update this order' })
+    }
+
+    // Validate status transition
+    const currentStatus = order.orderStatus
+    const allowedTransitions = VALID_ORDER_TRANSITIONS[currentStatus] || []
+
+    if (!allowedTransitions.includes(orderStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot transition from "${currentStatus}" to "${orderStatus}". Allowed transitions: ${allowedTransitions.length > 0 ? allowedTransitions.join(', ') : 'none (terminal state)'}`,
+      })
+    }
+
+    // Update the order status
+    order.orderStatus = orderStatus
+    await order.save()
+
+    // Re-fetch with populated fields for response
+    const updatedOrder = await Order.findById(order._id)
+      .populate('customer', 'name email')
+      .populate('store', 'name slug')
+
+    res.json({
+      success: true,
+      message: `Order status updated to "${orderStatus}"`,
+      order: updatedOrder,
+    })
+  } catch (err) {
+    if (err.name === 'CastError') {
+      return res.status(404).json({ success: false, message: 'Order not found' })
+    }
+    res.status(500).json({ success: false, message: err.message })
+  }
+}
+
+export { createOrder, getMyOrders, getOrderById, updateOrderStatus }
+

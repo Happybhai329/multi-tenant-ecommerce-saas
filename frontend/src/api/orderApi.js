@@ -14,3 +14,8 @@ export const fetchMyOrders = () => {
 export const fetchOrderById = (id) => {
   return api.get(`/orders/${id}`)
 }
+
+// PATCH /api/orders/:id/status — update order status (vendor)
+export const updateOrderStatus = (id, orderStatus) => {
+  return api.patch(`/orders/${id}/status`, { orderStatus })
+}

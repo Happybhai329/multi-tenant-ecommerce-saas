@@ -1,13 +1,35 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { fetchOrderById } from '../../api/orderApi'
+import { fetchOrderById, updateOrderStatus } from '../../api/orderApi'
 import LoadingSpinner from '../../components/LoadingSpinner'
+
+const STATUS_STEPS = [
+  { key: 'pending', label: 'Pending', icon: '⏳' },
+  { key: 'processing', label: 'Processing', icon: '⚙️' },
+  { key: 'shipped', label: 'Shipped', icon: '📦' },
+  { key: 'delivered', label: 'Delivered', icon: '✅' },
+]
+
+const NEXT_STATUS_MAP = {
+  pending: 'processing',
+  processing: 'shipped',
+  shipped: 'delivered',
+}
+
+const NEXT_STATUS_LABELS = {
+  pending: 'Mark as Processing',
+  processing: 'Mark as Shipped',
+  shipped: 'Mark as Delivered',
+}
 
 function VendorOrderDetailPage() {
   const { id } = useParams()
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [updating, setUpdating] = useState(false)
+  const [updateSuccess, setUpdateSuccess] = useState(null)
+  const [updateError, setUpdateError] = useState(null)
 
   useEffect(() => {
     const loadOrder = async () => {
@@ -22,6 +44,30 @@ function VendorOrderDetailPage() {
     }
     loadOrder()
   }, [id])
+
+  const handleStatusUpdate = async () => {
+    if (!order) return
+
+    const nextStatus = NEXT_STATUS_MAP[order.orderStatus]
+    if (!nextStatus) return
+
+    setUpdating(true)
+    setUpdateError(null)
+    setUpdateSuccess(null)
+
+    try {
+      const { data } = await updateOrderStatus(order._id, nextStatus)
+      setOrder(data.order)
+      setUpdateSuccess(`Order status updated to "${nextStatus}"`)
+
+      // Clear success message after 4 seconds
+      setTimeout(() => setUpdateSuccess(null), 4000)
+    } catch (err) {
+      setUpdateError(err.response?.data?.message || err.response?.data?.errors?.join(', ') || 'Failed to update status')
+    } finally {
+      setUpdating(false)
+    }
+  }
 
   const getStatusColor = (status) => {
     const colors = {
@@ -40,6 +86,9 @@ function VendorOrderDetailPage() {
       : 'bg-yellow-900/50 text-yellow-300 border-yellow-800/50'
   }
 
+  // Determine current step index for progress tracker
+  const currentStepIndex = STATUS_STEPS.findIndex((s) => s.key === order?.orderStatus)
+
   if (loading) return <LoadingSpinner />
 
   if (error) {
@@ -56,6 +105,9 @@ function VendorOrderDetailPage() {
   }
 
   if (!order) return null
+
+  const nextStatus = NEXT_STATUS_MAP[order.orderStatus]
+  const canUpdate = !!nextStatus && order.orderStatus !== 'cancelled'
 
   return (
     <div>
@@ -90,6 +142,148 @@ function VendorOrderDetailPage() {
           </span>
         </div>
       </div>
+
+      {/* Success / Error Messages */}
+      {updateSuccess && (
+        <div className="bg-emerald-900/20 border border-emerald-800/50 rounded-lg p-4 text-emerald-300 text-sm mb-4 flex items-center gap-2 animate-fade-in">
+          <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          {updateSuccess}
+        </div>
+      )}
+
+      {updateError && (
+        <div className="bg-red-900/20 border border-red-800/50 rounded-lg p-4 text-red-300 text-sm mb-4 flex items-center gap-2">
+          <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          {updateError}
+        </div>
+      )}
+
+      {/* Status Progress Tracker */}
+      {order.orderStatus !== 'cancelled' && (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-sm font-semibold text-white">Order Progress</h3>
+            {order.updatedAt !== order.createdAt && (
+              <span className="text-xs text-gray-500">
+                Last updated: {new Date(order.updatedAt).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+            )}
+          </div>
+
+          {/* Progress Steps */}
+          <div className="flex items-center">
+            {STATUS_STEPS.map((step, index) => {
+              const isCompleted = index < currentStepIndex
+              const isCurrent = index === currentStepIndex
+              const isFuture = index > currentStepIndex
+
+              return (
+                <div key={step.key} className="flex items-center flex-1 last:flex-none">
+                  {/* Step circle */}
+                  <div className="flex flex-col items-center relative">
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center text-lg border-2 transition-all duration-300 ${
+                        isCompleted
+                          ? 'bg-emerald-600/20 border-emerald-500 text-emerald-400'
+                          : isCurrent
+                            ? 'bg-blue-600/20 border-blue-500 text-blue-400 ring-4 ring-blue-500/20'
+                            : 'bg-gray-800 border-gray-700 text-gray-600'
+                      }`}
+                    >
+                      {isCompleted ? (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <span className="text-sm">{step.icon}</span>
+                      )}
+                    </div>
+                    <span
+                      className={`text-xs mt-2 font-medium ${
+                        isCompleted
+                          ? 'text-emerald-400'
+                          : isCurrent
+                            ? 'text-blue-400'
+                            : 'text-gray-600'
+                      }`}
+                    >
+                      {step.label}
+                    </span>
+                  </div>
+
+                  {/* Connecting line */}
+                  {index < STATUS_STEPS.length - 1 && (
+                    <div className="flex-1 mx-2 mb-6">
+                      <div
+                        className={`h-0.5 rounded-full transition-all duration-300 ${
+                          isCompleted ? 'bg-emerald-500' : 'bg-gray-700'
+                        }`}
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Action Button */}
+          {canUpdate && (
+            <div className="mt-6 pt-5 border-t border-gray-800 flex items-center justify-between">
+              <p className="text-sm text-gray-400">
+                Ready to advance this order?
+              </p>
+              <button
+                onClick={handleStatusUpdate}
+                disabled={updating}
+                className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 cursor-pointer flex items-center gap-2 ${
+                  updating
+                    ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30'
+                }`}
+              >
+                {updating ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                    {NEXT_STATUS_LABELS[order.orderStatus]}
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Terminal state message */}
+          {order.orderStatus === 'delivered' && (
+            <div className="mt-6 pt-5 border-t border-gray-800">
+              <div className="flex items-center gap-2 text-sm text-emerald-400">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                This order has been delivered and fulfilled.
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Items */}
