@@ -185,7 +185,6 @@ function VendorOrderDetailPage() {
             {STATUS_STEPS.map((step, index) => {
               const isCompleted = index < currentStepIndex
               const isCurrent = index === currentStepIndex
-              const isFuture = index > currentStepIndex
 
               return (
                 <div key={step.key} className="flex items-center flex-1 last:flex-none">
