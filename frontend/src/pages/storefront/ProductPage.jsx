@@ -17,6 +17,7 @@ function ProductPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [addedFeedback, setAddedFeedback] = useState(false)
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
 
   const loadProduct = async () => {
     setLoading(true)
@@ -35,6 +36,16 @@ function ProductPage() {
     loadProduct()
   }, [slug])
 
+  // Reset active image index when product changes
+  useEffect(() => {
+    if (product) {
+      const primaryIndex = (product.images || []).findIndex(
+        (img) => img && typeof img === 'object' && img.isPrimary
+      )
+      setActiveImageIndex(primaryIndex >= 0 ? primaryIndex : 0)
+    }
+  }, [product])
+
   const handleAddToCart = () => {
     if (!product || product.stock <= 0) return
 
@@ -50,7 +61,24 @@ function ProductPage() {
   if (error) return <ErrorAlert message={error} onRetry={loadProduct} />
   if (!product) return <ErrorAlert message="Product not found" />
 
-  const hasImage = product.images && product.images.length > 0 && product.images[0]
+  // Normalize image data to handle both new object format and old string format
+  const productImages = (product.images || []).map((img, index) => {
+    if (img && typeof img === 'object' && img.url) {
+      return {
+        url: img.url,
+        publicId: img.publicId || `img-${index}`,
+        isPrimary: img.isPrimary === true,
+      }
+    }
+    return {
+      url: img,
+      publicId: `img-${index}`,
+      isPrimary: index === 0,
+    }
+  })
+
+  const hasImages = productImages.length > 0
+  const activeImage = productImages[activeImageIndex] || productImages[0]
   const inStock = product.stock > 0
 
   // Check if already in cart and how many
@@ -67,19 +95,48 @@ function ProductPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Product Image */}
-        <div className="aspect-square bg-gray-900 border border-gray-800 rounded-lg overflow-hidden flex items-center justify-center">
-          {hasImage ? (
-            <img
-              src={product.images[0]}
-              alt={product.title}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <svg className="w-20 h-20 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
-            </svg>
+        {/* Product Image Gallery */}
+        <div className="flex flex-col gap-3">
+          <div className="aspect-square bg-gray-900 border border-gray-800 rounded-lg overflow-hidden flex items-center justify-center relative">
+            {hasImages && activeImage ? (
+              <img
+                src={activeImage.url}
+                alt={product.title}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <svg className="w-20 h-20 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                  d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+              </svg>
+            )}
+          </div>
+
+          {/* Thumbnails Row */}
+          {productImages.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent">
+              {productImages.map((image, index) => (
+                <button
+                  key={image.publicId}
+                  type="button"
+                  onClick={() => setActiveImageIndex(index)}
+                  className={`relative aspect-square w-16 sm:w-20 rounded-md overflow-hidden border bg-gray-950 flex-shrink-0 cursor-pointer transition-all duration-150 ${
+                    index === activeImageIndex
+                      ? 'border-emerald-500 ring-2 ring-emerald-500/20'
+                      : 'border-gray-800 hover:border-gray-700'
+                  }`}
+                >
+                  <img
+                    src={image.url}
+                    alt={`Thumbnail ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                  {image.isPrimary && (
+                    <span className="absolute top-0.5 left-0.5 w-1.5 h-1.5 bg-emerald-500 rounded-full" title="Primary image" />
+                  )}
+                </button>
+              ))}
+            </div>
           )}
         </div>
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { addProduct, clearProductError, clearSuccessMessage } from '../../features/products/productSlice'
+import ImageUploader from '../../components/vendor/ImageUploader'
 
 const CATEGORIES = [
   'Electronics',
@@ -29,7 +30,7 @@ function AddProductPage() {
     stock: '',
     status: 'draft',
   })
-  const [imageUrls, setImageUrls] = useState([''])
+  const [images, setImages] = useState([])
   const [validationErrors, setValidationErrors] = useState({})
 
   // Redirect on success
@@ -56,24 +57,6 @@ function AddProductPage() {
     }
   }
 
-  const handleImageChange = (index, value) => {
-    const updated = [...imageUrls]
-    updated[index] = value
-    setImageUrls(updated)
-  }
-
-  const addImageField = () => {
-    setImageUrls([...imageUrls, ''])
-  }
-
-  const removeImageField = (index) => {
-    if (imageUrls.length > 1) {
-      setImageUrls(imageUrls.filter((_, i) => i !== index))
-    } else {
-      setImageUrls([''])
-    }
-  }
-
   const validate = () => {
     const errors = {}
     if (!form.title.trim()) errors.title = 'Title is required'
@@ -87,8 +70,6 @@ function AddProductPage() {
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!validate()) return
-
-    const images = imageUrls.filter((url) => url.trim() !== '')
 
     dispatch(
       addProduct({
@@ -237,41 +218,8 @@ function AddProductPage() {
           </select>
         </div>
 
-        {/* Image URLs */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">
-            Image URLs
-          </label>
-          <div className="space-y-2">
-            {imageUrls.map((url, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={url}
-                  onChange={(e) => handleImageChange(index, e.target.value)}
-                  className="flex-1 px-4 py-2 bg-gray-950 border border-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-colors"
-                  placeholder="https://example.com/image.jpg"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeImageField(index)}
-                  className="px-2 py-2 text-gray-500 hover:text-red-400 transition-colors cursor-pointer"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={addImageField}
-            className="mt-2 text-sm text-emerald-400 hover:text-emerald-300 cursor-pointer"
-          >
-            + Add another image URL
-          </button>
-        </div>
+        {/* Image Upload */}
+        <ImageUploader images={images} onChange={setImages} />
 
         {/* Submit Buttons */}
         <div className="flex items-center gap-3 pt-4 border-t border-gray-800">

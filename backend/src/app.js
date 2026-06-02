@@ -11,6 +11,7 @@ import productRoutes from './routes/productRoutes.js'
 import orderRoutes from './routes/orderRoutes.js'
 import paymentRoutes from './routes/paymentRoutes.js'
 import analyticsRoutes from './routes/analyticsRoutes.js'
+import uploadRoutes from './routes/uploadRoutes.js'
 
 const app = express()
 
@@ -49,6 +50,7 @@ app.use('/api/products', productRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/payments', paymentRoutes)
 app.use('/api/analytics', analyticsRoutes)
+app.use('/api/uploads', uploadRoutes)
 
 app.use(notFound)
 app.use(errorHandler)

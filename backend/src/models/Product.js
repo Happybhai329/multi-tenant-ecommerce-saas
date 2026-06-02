@@ -34,10 +34,13 @@ const productSchema = new mongoose.Schema(
       required: [true, 'Category is required'],
       trim: true,
     },
-    images: {
-      type: [String],
-      default: [],
-    },
+    images: [
+      {
+        url: { type: String, required: true },
+        publicId: { type: String, required: true },
+        isPrimary: { type: Boolean, default: false },
+      },
+    ],
     stock: {
       type: Number,
       required: [true, 'Stock is required'],

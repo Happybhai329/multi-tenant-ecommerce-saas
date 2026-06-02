@@ -7,7 +7,17 @@ function ProductCard({ product }) {
   const dispatch = useDispatch()
   const { showToast } = useToast()
 
-  const hasImage = product.images && product.images.length > 0 && product.images[0]
+  // Find the primary image URL or fallback to the first image
+  const getProductImageUrl = () => {
+    if (!product.images || product.images.length === 0) return null
+    const primaryImg = product.images.find((img) => img && typeof img === 'object' && img.isPrimary)
+    if (primaryImg && primaryImg.url) return primaryImg.url
+    const firstImg = product.images[0]
+    return firstImg && typeof firstImg === 'object' ? firstImg.url : firstImg
+  }
+
+  const imageUrl = getProductImageUrl()
+  const hasImage = !!imageUrl
   const inStock = product.stock > 0
 
   const handleAddToCart = (e) => {
@@ -29,7 +39,7 @@ function ProductCard({ product }) {
       <div className="relative aspect-square bg-gray-800 flex items-center justify-center overflow-hidden">
         {hasImage ? (
           <img
-            src={product.images[0]}
+            src={imageUrl}
             alt={product.title}
             className="w-full h-full object-cover"
           />

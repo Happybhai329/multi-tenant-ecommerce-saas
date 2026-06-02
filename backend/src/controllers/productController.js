@@ -20,13 +20,33 @@ const createProduct = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Category is required' })
     }
 
+    // Validate images array — each item must have url and publicId
+    let validatedImages = []
+    if (Array.isArray(images)) {
+      validatedImages = images
+        .filter((img) => img && img.url && img.publicId)
+        .map((img, index) => ({
+          url: img.url,
+          publicId: img.publicId,
+          isPrimary: img.isPrimary === true,
+        }))
+
+      // Ensure exactly one primary image if images exist
+      if (validatedImages.length > 0) {
+        const hasPrimary = validatedImages.some((img) => img.isPrimary)
+        if (!hasPrimary) {
+          validatedImages[0].isPrimary = true
+        }
+      }
+    }
+
     const product = await Product.create({
       title: title.trim(),
       description,
       price,
       comparePrice,
       category: category.trim(),
-      images: images || [],
+      images: validatedImages,
       stock: stock ?? 0,
       status: status || 'draft',
       store: store._id,
@@ -110,12 +130,35 @@ const updateProduct = async (req, res) => {
       return res.status(403).json({ success: false, message: 'You can only update your own products' })
     }
 
-    const allowed = ['title', 'description', 'price', 'comparePrice', 'category', 'images', 'stock', 'status']
+    const allowed = ['title', 'description', 'price', 'comparePrice', 'category', 'stock', 'status']
     allowed.forEach((field) => {
       if (req.body[field] !== undefined) {
         product[field] = req.body[field]
       }
     })
+
+    // Handle images separately — validate structure
+    if (req.body.images !== undefined) {
+      if (Array.isArray(req.body.images)) {
+        const validatedImages = req.body.images
+          .filter((img) => img && img.url && img.publicId)
+          .map((img) => ({
+            url: img.url,
+            publicId: img.publicId,
+            isPrimary: img.isPrimary === true,
+          }))
+
+        // Ensure exactly one primary image if images exist
+        if (validatedImages.length > 0) {
+          const hasPrimary = validatedImages.some((img) => img.isPrimary)
+          if (!hasPrimary) {
+            validatedImages[0].isPrimary = true
+          }
+        }
+
+        product.images = validatedImages
+      }
+    }
 
     await product.save()
 
