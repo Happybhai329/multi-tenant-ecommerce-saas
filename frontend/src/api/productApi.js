@@ -29,3 +29,20 @@ export const updateProduct = (id, productData) => {
 export const deleteProduct = (id) => {
   return api.delete(`/products/${id}`)
 }
+
+// --- REVIEWS ---
+
+// POST /api/reviews
+export const createReview = (reviewData) => {
+  return api.post('/reviews', reviewData)
+}
+
+// GET /api/reviews/product/:productId
+export const getProductReviews = (productId) => {
+  return api.get(`/reviews/product/${productId}`)
+}
+
+// DELETE /api/reviews/:id
+export const deleteReview = (id) => {
+  return api.delete(`/reviews/${id}`)
+}
