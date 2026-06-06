@@ -1,8 +1,21 @@
 import api from './axios'
 
-// GET /api/products — fetch all published products (public)
+// GET /api/products — fetch products with search, filter, sort, pagination
 export const fetchPublicProducts = (params = {}) => {
-  return api.get('/products', { params })
+  // Clean up params — remove empty strings and undefined values
+  const cleanParams = {}
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== '' && value !== undefined && value !== null) {
+      cleanParams[key] = value
+    }
+  })
+  return api.get('/products', { params: cleanParams })
+}
+
+// GET /api/products/categories — fetch distinct categories
+export const fetchCategories = (storeId) => {
+  const params = storeId ? { store: storeId } : {}
+  return api.get('/products/categories', { params })
 }
 
 // GET /api/products/:slug — fetch a single product by slug (public)

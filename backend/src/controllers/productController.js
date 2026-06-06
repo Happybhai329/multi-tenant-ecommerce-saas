@@ -68,9 +68,7 @@ const getProducts = async (req, res) => {
     const isVendor = req.user?.role === 'vendor'
     const isAdmin = req.user?.role === 'admin'
 
-    if (req.query.category) filter.category = req.query.category
-    if (req.query.store) filter.store = req.query.store
-
+    // --- Access control ---
     if (isAdmin) {
       if (req.query.status) filter.status = req.query.status
     } else if (isVendor) {
@@ -85,11 +83,98 @@ const getProducts = async (req, res) => {
       filter.status = 'published'
     }
 
-    const products = await Product.find(filter)
-      .populate('store', 'name slug')
-      .sort('-createdAt')
+    // --- Search (text search with regex fallback) ---
+    if (req.query.search && req.query.search.trim()) {
+      const searchTerm = req.query.search.trim()
+      // Use $or with regex for partial matching (MongoDB $text only does whole-word)
+      const regex = new RegExp(searchTerm, 'i')
+      filter.$or = [
+        { title: regex },
+        { description: regex },
+        { category: regex },
+      ]
+    }
 
-    res.json({ success: true, count: products.length, products })
+    // --- Category filter (case-insensitive exact match) ---
+    if (req.query.category && req.query.category.trim()) {
+      const catRegex = new RegExp(`^${req.query.category.trim()}$`, 'i')
+      filter.category = catRegex
+    }
+
+    // --- Store filter ---
+    if (req.query.store) {
+      filter.store = req.query.store
+    }
+
+    // --- Price range ---
+    if (req.query.minPrice || req.query.maxPrice) {
+      filter.price = {}
+      if (req.query.minPrice) filter.price.$gte = Number(req.query.minPrice)
+      if (req.query.maxPrice) filter.price.$lte = Number(req.query.maxPrice)
+    }
+
+    // --- Sorting ---
+    let sortOption = '-createdAt' // default: newest first
+    switch (req.query.sort) {
+      case 'price_asc':
+        sortOption = 'price'
+        break
+      case 'price_desc':
+        sortOption = '-price'
+        break
+      case 'newest':
+        sortOption = '-createdAt'
+        break
+      case 'rating':
+        sortOption = '-averageRating -reviewCount'
+        break
+    }
+
+    // --- Pagination ---
+    const page = Math.max(1, parseInt(req.query.page) || 1)
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 12))
+    const skip = (page - 1) * limit
+
+    // Execute count + query in parallel
+    const [total, products] = await Promise.all([
+      Product.countDocuments(filter),
+      Product.find(filter)
+        .populate('store', 'name slug')
+        .sort(sortOption)
+        .skip(skip)
+        .limit(limit),
+    ])
+
+    const pages = Math.ceil(total / limit)
+
+    res.json({
+      success: true,
+      products,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages,
+      },
+    })
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message })
+  }
+}
+
+const getCategories = async (req, res) => {
+  try {
+    const filter = { status: 'published' }
+
+    // Optionally scope to a specific store
+    if (req.query.store) {
+      filter.store = req.query.store
+    }
+
+    const categories = await Product.distinct('category', filter)
+    categories.sort((a, b) => a.localeCompare(b))
+
+    res.json({ success: true, categories })
   } catch (err) {
     res.status(500).json({ success: false, message: err.message })
   }
@@ -191,4 +276,4 @@ const deleteProduct = async (req, res) => {
   }
 }
 
-export { createProduct, getProducts, getProductBySlug, updateProduct, deleteProduct }
+export { createProduct, getProducts, getCategories, getProductBySlug, updateProduct, deleteProduct }

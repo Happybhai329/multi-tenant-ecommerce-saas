@@ -3,6 +3,7 @@ import { protect, authorize } from '../middleware/auth.js'
 import {
   createProduct,
   getProducts,
+  getCategories,
   getProductBySlug,
   updateProduct,
   deleteProduct,
@@ -28,6 +29,7 @@ const optionalAuth = async (req, res, next) => {
 
 router.post('/', protect, authorize('vendor'), createProduct)
 router.get('/', optionalAuth, getProducts)
+router.get('/categories', getCategories)
 router.get('/:slug', optionalAuth, getProductBySlug)
 router.patch('/:id', protect, authorize('vendor'), updateProduct)
 router.delete('/:id', protect, authorize('vendor'), deleteProduct)

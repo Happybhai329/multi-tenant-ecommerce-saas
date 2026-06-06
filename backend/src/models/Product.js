@@ -89,6 +89,9 @@ productSchema.pre('validate', function () {
 productSchema.index({ slug: 1, store: 1 }, { unique: true })
 productSchema.index({ store: 1, status: 1 })
 productSchema.index({ category: 1 })
+productSchema.index({ title: 'text', description: 'text', category: 'text' })
+productSchema.index({ price: 1 })
+productSchema.index({ averageRating: -1 })
 
 const Product = mongoose.model('Product', productSchema)
 
