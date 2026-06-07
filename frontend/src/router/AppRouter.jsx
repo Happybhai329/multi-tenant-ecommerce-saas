@@ -18,6 +18,7 @@ import StoreListPage from '../pages/storefront/StoreListPage'
 import StorePage from '../pages/storefront/StorePage'
 import ProductListPage from '../pages/storefront/ProductListPage'
 import ProductPage from '../pages/storefront/ProductPage'
+import WishlistPage from '../pages/storefront/WishlistPage'
 
 // Cart pages
 import CartPage from '../pages/cart/CartPage'
@@ -58,6 +59,14 @@ function AppRouter() {
           <Route path="/stores/:slug" element={<StorePage />} />
           <Route path="/products" element={<ProductListPage />} />
           <Route path="/products/:slug" element={<ProductPage />} />
+          <Route
+            path="/wishlist"
+            element={
+              <ProtectedRoute allowedRoles={['customer']}>
+                <WishlistPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Cart */}
           <Route path="/cart" element={<CartPage />} />

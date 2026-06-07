@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { fetchProductBySlug } from '../../api/productApi'
 import { addToCart, selectCartItems } from '../../features/cart/cartSlice'
+import { addToWishlist, removeFromWishlist, selectIsInWishlist } from '../../features/wishlist/wishlistSlice'
 import { useToast } from '../../components/ToastContext'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import ErrorAlert from '../../components/ErrorAlert'
@@ -13,12 +14,16 @@ function ProductPage() {
   const dispatch = useDispatch()
   const { showToast } = useToast()
   const cartItems = useSelector(selectCartItems)
+  const { token, user } = useSelector((state) => state.auth)
 
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [addedFeedback, setAddedFeedback] = useState(false)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
+
+  const isCustomer = token && user?.role === 'customer'
+  const inWishlist = useSelector((state) => product ? selectIsInWishlist(state, product._id) : false)
 
   const loadProduct = async () => {
     setLoading(true)
@@ -56,6 +61,21 @@ function ProductPage() {
     // Brief visual feedback on the button
     setAddedFeedback(true)
     setTimeout(() => setAddedFeedback(false), 1500)
+  }
+
+  const handleToggleWishlist = () => {
+    if (!product) return
+    if (!isCustomer) {
+      showToast('Please login to save products', 'error')
+      return
+    }
+    if (inWishlist) {
+      dispatch(removeFromWishlist(product._id))
+      showToast('Removed from wishlist', 'success')
+    } else {
+      dispatch(addToWishlist(product._id))
+      showToast('Added to wishlist', 'success')
+    }
   }
 
   if (loading) return <LoadingSpinner message="Loading product..." />
@@ -199,25 +219,45 @@ function ProductPage() {
           )}
 
           {/* Add to Cart Button */}
-          <button
-            onClick={handleAddToCart}
-            disabled={!inStock}
-            className={`w-full py-3 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
-              !inStock
-                ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+          <div className="flex gap-3">
+            <button
+              onClick={handleAddToCart}
+              disabled={!inStock}
+              className={`flex-1 py-3 rounded-lg font-medium text-sm transition-colors cursor-pointer ${
+                !inStock
+                  ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                  : addedFeedback
+                  ? 'bg-green-600 text-white'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              }`}
+            >
+              {!inStock
+                ? 'Out of Stock'
                 : addedFeedback
-                ? 'bg-green-600 text-white'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-            }`}
-          >
-            {!inStock
-              ? 'Out of Stock'
-              : addedFeedback
-              ? 'Added ✓'
-              : qtyInCart > 0
-              ? `Add Another (${qtyInCart} in cart)`
-              : 'Add to Cart'}
-          </button>
+                ? 'Added ✓'
+                : qtyInCart > 0
+                ? `Add Another (${qtyInCart} in cart)`
+                : 'Add to Cart'}
+            </button>
+
+            {(!user || isCustomer) && (
+              <button
+                onClick={handleToggleWishlist}
+                className="px-4 py-3 rounded-lg border border-gray-700 bg-gray-900 text-gray-300 hover:text-white hover:border-gray-500 transition-colors cursor-pointer flex items-center justify-center"
+                title={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
+              >
+                <svg
+                  className={`w-6 h-6 ${inWishlist ? 'text-red-500' : ''}`}
+                  fill={inWishlist ? 'currentColor' : 'none'}
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={inWishlist ? 0 : 1.5}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                </svg>
+              </button>
+            )}
+          </div>
 
           {/* View Cart link when items in cart */}
           {qtyInCart > 0 && !addedFeedback && (

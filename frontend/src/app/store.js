@@ -3,6 +3,7 @@ import { createListenerMiddleware } from '@reduxjs/toolkit'
 import authReducer from '../features/auth/authSlice'
 import productReducer from '../features/products/productSlice'
 import cartReducer from '../features/cart/cartSlice'
+import wishlistReducer from '../features/wishlist/wishlistSlice'
 
 // ── Persist cart to localStorage on every change ──
 const cartPersistListener = createListenerMiddleware()
@@ -24,7 +25,9 @@ const store = configureStore({
     auth: authReducer,
     products: productReducer,
     cart: cartReducer,
+    wishlist: wishlistReducer,
   },
+
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().prepend(cartPersistListener.middleware),
 })

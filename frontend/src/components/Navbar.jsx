@@ -2,11 +2,19 @@ import { useSelector, useDispatch } from 'react-redux'
 import { Link, NavLink } from 'react-router-dom'
 import { logout } from '../features/auth/authSlice'
 import { selectCartTotalItems } from '../features/cart/cartSlice'
+import { getWishlist } from '../features/wishlist/wishlistSlice'
+import { useEffect } from 'react'
 
 function Navbar() {
   const { token, user } = useSelector((state) => state.auth)
   const cartCount = useSelector(selectCartTotalItems)
   const dispatch = useDispatch()
+
+  useEffect(() => {
+    if (token && user?.role === 'customer') {
+      dispatch(getWishlist())
+    }
+  }, [token, user, dispatch])
 
   const handleLogout = () => {
     dispatch(logout())
@@ -37,7 +45,10 @@ function Navbar() {
             <NavLink to="/stores" className={navLinkClass}>Stores</NavLink>
             <NavLink to="/products" className={navLinkClass}>Products</NavLink>
             {token && user?.role === 'customer' && (
-              <NavLink to="/orders" className={navLinkClass}>My Orders</NavLink>
+              <>
+                <NavLink to="/orders" className={navLinkClass}>My Orders</NavLink>
+                <NavLink to="/wishlist" className={navLinkClass}>Wishlist</NavLink>
+              </>
             )}
           </div>
         </div>

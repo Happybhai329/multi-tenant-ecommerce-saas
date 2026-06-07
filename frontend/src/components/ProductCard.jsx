@@ -1,11 +1,16 @@
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { addToCart } from '../features/cart/cartSlice'
+import { addToWishlist, removeFromWishlist, selectIsInWishlist } from '../features/wishlist/wishlistSlice'
 import { useToast } from './ToastContext'
 
 function ProductCard({ product }) {
   const dispatch = useDispatch()
   const { showToast } = useToast()
+
+  const { token, user } = useSelector((state) => state.auth)
+  const isCustomer = token && user?.role === 'customer'
+  const inWishlist = useSelector((state) => selectIsInWishlist(state, product._id))
 
   // Find the primary image URL or fallback to the first image
   const getProductImageUrl = () => {
@@ -30,6 +35,22 @@ function ProductCard({ product }) {
     showToast(`${product.title} added to cart`, 'success')
   }
 
+  const handleToggleWishlist = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!isCustomer) {
+      showToast('Please login to save products', 'error')
+      return
+    }
+    if (inWishlist) {
+      dispatch(removeFromWishlist(product._id))
+      showToast('Removed from wishlist', 'success')
+    } else {
+      dispatch(addToWishlist(product._id))
+      showToast('Added to wishlist', 'success')
+    }
+  }
+
   return (
     <Link
       to={`/products/${product.slug}`}
@@ -48,6 +69,25 @@ function ProductCard({ product }) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
               d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
           </svg>
+        )}
+
+        {/* Wishlist Button */}
+        {(!user || isCustomer) && (
+          <button
+            onClick={handleToggleWishlist}
+            className="absolute top-2 right-2 p-2 bg-gray-900/50 hover:bg-gray-900 rounded-full text-gray-400 hover:text-white transition-all shadow-sm z-10 cursor-pointer"
+            title={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
+          >
+            <svg
+              className={`w-5 h-5 ${inWishlist ? 'text-red-500' : ''}`}
+              fill={inWishlist ? 'currentColor' : 'none'}
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={inWishlist ? 0 : 1.5}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+            </svg>
+          </button>
         )}
 
         {/* Quick Add to Cart — hover overlay */}
