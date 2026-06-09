@@ -74,7 +74,7 @@ function VendorDashboardHome() {
       value: loading ? '...' : (summary.totalStock || 0).toLocaleString(),
       color: 'text-yellow-400',
       bg: 'bg-yellow-600/20 border-yellow-500/30',
-      subtext: loading ? null : `Across ${summary.totalProducts || 0} products`,
+      subtext: loading ? null : `${summary.lowStockCount || 0} low, ${summary.outOfStockCount || 0} out of stock`,
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
@@ -103,6 +103,7 @@ function VendorDashboardHome() {
   // Pending / processing counts for attention banner
   const pendingOrders = ordersByStatus.pending || 0
   const processingOrders = ordersByStatus.processing || 0
+  const lowStockTotal = (summary.lowStockCount || 0) + (summary.outOfStockCount || 0)
 
   return (
     <div>
@@ -134,7 +135,7 @@ function VendorDashboardHome() {
       </div>
 
       {/* Attention Required */}
-      {!loading && (pendingOrders > 0 || processingOrders > 0) && (
+      {!loading && (pendingOrders > 0 || processingOrders > 0 || lowStockTotal > 0) && (
         <div className="bg-amber-900/10 border border-amber-800/30 rounded-xl p-5 mb-6">
           <h3 className="text-sm font-semibold text-amber-300 mb-3 flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -159,6 +160,15 @@ function VendorDashboardHome() {
               >
                 <span className="w-2 h-2 rounded-full bg-blue-400" />
                 {processingOrders} {processingOrders === 1 ? 'order' : 'orders'} processing
+              </Link>
+            )}
+            {lowStockTotal > 0 && (
+              <Link
+                to="/vendor/inventory"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-red-900/30 hover:bg-red-900/50 border border-red-800/50 rounded-lg text-sm text-red-300 transition-colors"
+              >
+                <span className="w-2 h-2 rounded-full bg-red-400" />
+                {lowStockTotal} items need stock update
               </Link>
             )}
           </div>

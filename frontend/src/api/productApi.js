@@ -38,6 +38,11 @@ export const updateProduct = (id, productData) => {
   return api.patch(`/products/${id}`, productData)
 }
 
+// PATCH /api/products/:id/stock — update stock for an existing product
+export const updateProductStockApi = (id, stock) => {
+  return api.patch(`/products/${id}/stock`, { stock })
+}
+
 // DELETE /api/products/:id — delete a product
 export const deleteProduct = (id) => {
   return api.delete(`/products/${id}`)

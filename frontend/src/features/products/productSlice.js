@@ -3,6 +3,7 @@ import {
   fetchVendorProducts,
   createProduct,
   updateProduct,
+  updateProductStockApi,
   deleteProduct,
 } from '../../api/productApi'
 
@@ -58,6 +59,20 @@ export const removeProduct = createAsyncThunk(
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || 'Failed to delete product'
+      )
+    }
+  }
+)
+
+export const updateProductStockThunk = createAsyncThunk(
+  'products/updateProductStock',
+  async ({ id, stock }, { rejectWithValue }) => {
+    try {
+      const response = await updateProductStockApi(id, stock)
+      return response.data.product
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || 'Failed to update stock'
       )
     }
   }
@@ -144,6 +159,15 @@ const productSlice = createSlice({
       .addCase(removeProduct.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
+      })
+      // Update stock
+      .addCase(updateProductStockThunk.fulfilled, (state, action) => {
+        const index = state.items.findIndex(
+          (item) => item._id === action.payload._id
+        )
+        if (index !== -1) {
+          state.items[index] = action.payload
+        }
       })
   },
 })

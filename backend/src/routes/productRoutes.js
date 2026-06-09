@@ -6,6 +6,7 @@ import {
   getCategories,
   getProductBySlug,
   updateProduct,
+  updateProductStock,
   deleteProduct,
 } from '../controllers/productController.js'
 
@@ -32,6 +33,7 @@ router.get('/', optionalAuth, getProducts)
 router.get('/categories', getCategories)
 router.get('/:slug', optionalAuth, getProductBySlug)
 router.patch('/:id', protect, authorize('vendor'), updateProduct)
+router.patch('/:id/stock', protect, authorize('vendor'), updateProductStock)
 router.delete('/:id', protect, authorize('vendor'), deleteProduct)
 
 export default router

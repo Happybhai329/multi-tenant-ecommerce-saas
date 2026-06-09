@@ -24,6 +24,7 @@ function ProductCard({ product }) {
   const imageUrl = getProductImageUrl()
   const hasImage = !!imageUrl
   const inStock = product.stock > 0
+  const isLowStock = inStock && product.stock <= (product.lowStockThreshold || 5)
 
   const handleAddToCart = (e) => {
     e.preventDefault()
@@ -135,8 +136,8 @@ function ProductCard({ product }) {
           <span className="text-xs px-2 py-0.5 bg-gray-800 text-gray-400 rounded">
             {product.category}
           </span>
-          <span className={`text-xs font-medium ${inStock ? 'text-green-400' : 'text-red-400'}`}>
-            {inStock ? 'In Stock' : 'Out of Stock'}
+          <span className={`text-xs font-medium ${!inStock ? 'text-red-400' : isLowStock ? 'text-yellow-400' : 'text-green-400'}`}>
+            {!inStock ? 'Out of Stock' : isLowStock ? `Only ${product.stock} left!` : 'In Stock'}
           </span>
         </div>
 

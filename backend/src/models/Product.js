@@ -47,6 +47,11 @@ const productSchema = new mongoose.Schema(
       min: [0, 'Stock cannot be negative'],
       default: 0,
     },
+    lowStockThreshold: {
+      type: Number,
+      default: 5,
+      min: [0, 'Threshold cannot be negative'],
+    },
     status: {
       type: String,
       enum: ['draft', 'published'],
@@ -74,8 +79,18 @@ const productSchema = new mongoose.Schema(
       min: 0,
     },
   },
-  { timestamps: true }
+  { 
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+  }
 )
+
+productSchema.virtual('stockStatus').get(function () {
+  if (this.stock === 0) return 'out_of_stock'
+  if (this.stock <= this.lowStockThreshold) return 'low_stock'
+  return 'in_stock'
+})
 
 productSchema.pre('validate', function () {
   if (this.title && (!this.slug || this.isModified('title'))) {

@@ -101,6 +101,7 @@ function ProductPage() {
   const hasImages = productImages.length > 0
   const activeImage = productImages[activeImageIndex] || productImages[0]
   const inStock = product.stock > 0
+  const isLowStock = inStock && product.stock <= (product.lowStockThreshold || 5)
 
   // Check if already in cart and how many
   const cartItem = cartItems.find((item) => item._id === product._id)
@@ -202,9 +203,9 @@ function ProductPage() {
 
           {/* Stock Status */}
           <div className="flex items-center gap-2 mb-6">
-            <span className={`inline-block w-2 h-2 rounded-full ${inStock ? 'bg-green-400' : 'bg-red-400'}`}></span>
-            <span className={`text-sm font-medium ${inStock ? 'text-green-400' : 'text-red-400'}`}>
-              {inStock ? `In Stock (${product.stock} available)` : 'Out of Stock'}
+            <span className={`inline-block w-2 h-2 rounded-full ${!inStock ? 'bg-red-400' : isLowStock ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'}`}></span>
+            <span className={`text-sm font-medium ${!inStock ? 'text-red-400' : isLowStock ? 'text-yellow-400' : 'text-green-400'}`}>
+              {!inStock ? 'Out of Stock' : isLowStock ? `Low Stock (Only ${product.stock} left!)` : `In Stock (${product.stock} available)`}
             </span>
           </div>
 

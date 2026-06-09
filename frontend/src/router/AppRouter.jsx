@@ -40,6 +40,7 @@ import VendorDashboardHome from '../pages/vendor/VendorDashboardHome'
 import VendorProductListPage from '../pages/vendor/ProductListPage'
 import AddProductPage from '../pages/vendor/AddProductPage'
 import EditProductPage from '../pages/vendor/EditProductPage'
+import VendorInventoryPage from '../pages/vendor/VendorInventoryPage'
 import VendorOrdersPage from '../pages/vendor/VendorOrdersPage'
 import VendorOrderDetailPage from '../pages/vendor/VendorOrderDetailPage'
 import VendorSettingsPage from '../pages/vendor/VendorSettingsPage'
@@ -138,6 +139,7 @@ function AppRouter() {
           <Route path="products" element={<VendorProductListPage />} />
           <Route path="products/new" element={<AddProductPage />} />
           <Route path="products/:id/edit" element={<EditProductPage />} />
+          <Route path="inventory" element={<VendorInventoryPage />} />
           <Route path="orders" element={<VendorOrdersPage />} />
           <Route path="orders/:id" element={<VendorOrderDetailPage />} />
           <Route path="settings" element={<VendorSettingsPage />} />

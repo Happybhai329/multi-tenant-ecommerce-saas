@@ -40,6 +40,8 @@ const getVendorAnalytics = async (req, res) => {
     const publishedProducts = products.filter((p) => p.status === 'published').length
     const draftProducts = products.filter((p) => p.status === 'draft').length
     const totalStock = products.reduce((sum, p) => sum + (p.stock || 0), 0)
+    const lowStockCount = products.filter((p) => p.stock > 0 && p.stock <= (p.lowStockThreshold || 5)).length
+    const outOfStockCount = products.filter((p) => p.stock === 0).length
 
     // ── Revenue & Orders by month (last 12 months) ──
     const now = new Date()
@@ -94,6 +96,8 @@ const getVendorAnalytics = async (req, res) => {
           publishedProducts,
           draftProducts,
           totalStock,
+          lowStockCount,
+          outOfStockCount,
           avgOrderValue: Math.round(avgOrderValue * 100) / 100,
           paidOrders: paidOrders.length,
         },
