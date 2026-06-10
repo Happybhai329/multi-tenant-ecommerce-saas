@@ -25,8 +25,11 @@ function PaymentSuccessPage() {
       </div>
 
       <h1 className="text-2xl font-bold text-white mb-3">Payment Successful!</h1>
-      <p className="text-gray-400 mb-2">
+      <p className="text-gray-400 mb-1">
         Your payment has been processed and your order is now being prepared.
+      </p>
+      <p className="text-gray-400 text-sm mb-2">
+        A receipt has been sent to your registered email address.
       </p>
 
       {order && (

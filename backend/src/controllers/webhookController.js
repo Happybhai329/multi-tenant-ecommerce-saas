@@ -1,6 +1,7 @@
 import stripe from '../config/stripe.js'
 import Payment from '../models/Payment.js'
 import Order from '../models/Order.js'
+import { sendPaymentSuccessEmail } from '../utils/emailService.js'
 
 // POST /api/payments/webhook — Handle Stripe webhook events
 const handleWebhook = async (req, res) => {
@@ -71,12 +72,17 @@ async function handlePaymentSuccess(paymentIntent) {
   await payment.save()
 
   // Update the associated order
-  const order = await Order.findById(payment.order)
+  const order = await Order.findById(payment.order).populate('customer', 'name email')
   if (order) {
     order.paymentStatus = 'paid'
     order.orderStatus = 'processing'
     await order.save()
     console.log(`✅ Order ${order.orderNumber} updated: paid + processing`)
+
+    if (order.customer && order.customer.email) {
+      sendPaymentSuccessEmail(order.customer.email, payment.amount, order.orderNumber)
+        .catch(err => console.error('Failed to send payment success email:', err))
+    }
   }
 }
 

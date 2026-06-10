@@ -2,6 +2,7 @@ import Order from '../models/Order.js'
 import Product from '../models/Product.js'
 import Store from '../models/Store.js'
 import { VALID_ORDER_TRANSITIONS } from '../middleware/validate.js'
+import { sendOrderConfirmationEmail, sendOrderStatusUpdateEmail } from '../utils/emailService.js'
 
 // POST /api/orders — Create order(s) from cart items
 const createOrder = async (req, res) => {
@@ -102,6 +103,12 @@ const createOrder = async (req, res) => {
       await Product.findByIdAndUpdate(item.product, {
         $inc: { stock: -item.quantity },
       })
+    }
+
+    // ── Send order confirmation emails ──
+    for (const order of createdOrders) {
+      sendOrderConfirmationEmail(req.user.email, order._id.toString(), order.items, order.totalAmount)
+        .catch(err => console.error('Failed to send order confirmation email:', err))
     }
 
     res.status(201).json({
@@ -215,6 +222,12 @@ const updateOrderStatus = async (req, res) => {
     const updatedOrder = await Order.findById(order._id)
       .populate('customer', 'name email')
       .populate('store', 'name slug')
+
+    // Send order status update email asynchronously
+    if (updatedOrder.customer && updatedOrder.customer.email) {
+      sendOrderStatusUpdateEmail(updatedOrder.customer.email, updatedOrder._id.toString(), orderStatus)
+        .catch(err => console.error('Failed to send order status email:', err))
+    }
 
     res.json({
       success: true,

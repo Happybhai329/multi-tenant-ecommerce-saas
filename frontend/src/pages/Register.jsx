@@ -63,6 +63,8 @@ function Register() {
     return Object.keys(errors).length === 0
   }
 
+  const [successMessage, setSuccessMessage] = useState('')
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!validateForm()) return
@@ -77,12 +79,16 @@ function Register() {
       })
 
       if (response.data.success) {
-        dispatch(
-          authSuccess({
-            user: response.data.user,
-            token: response.data.token,
-          })
-        )
+        setSuccessMessage('Registration successful! A welcome email has been sent to your address.')
+        // Delay redirect to allow user to read the message
+        setTimeout(() => {
+          dispatch(
+            authSuccess({
+              user: response.data.user,
+              token: response.data.token,
+            })
+          )
+        }, 3000)
       } else {
         dispatch(authFailure(response.data.message || 'Registration failed'))
       }
@@ -128,6 +134,21 @@ function Register() {
                 />
               </svg>
               <span>{error}</span>
+            </div>
+          )}
+
+          {/* Success Alert */}
+          {successMessage && (
+            <div className="mb-4 bg-green-900/30 border border-green-800/50 text-green-400 px-4 py-3 rounded-lg text-sm flex items-start space-x-2">
+              <svg
+                className="w-5 h-5 flex-shrink-0 mt-0.5 text-green-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>{successMessage}</span>
             </div>
           )}
 

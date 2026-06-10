@@ -3,6 +3,7 @@ import User from '../models/User.js'
 import generateToken from '../utils/generateToken.js'
 import { protect } from '../middleware/auth.js'
 import { validateRegister, validateLogin } from '../middleware/validate.js'
+import { sendWelcomeEmail } from '../utils/emailService.js'
 
 const router = express.Router()
 
@@ -17,6 +18,9 @@ router.post('/register', validateRegister, async (req, res) => {
     }
 
     const user = await User.create({ name, email, password, role })
+
+    // Send welcome email asynchronously (don't await to avoid blocking the response)
+    sendWelcomeEmail(user.email, user.name, user.role).catch(err => console.error('Failed to send welcome email:', err))
 
     res.status(201).json({
       success: true,
