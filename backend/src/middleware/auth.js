@@ -45,6 +45,14 @@ const authorize = (...roles) => {
       })
     }
 
+    // Protect against suspended vendors
+    if (req.user.role === 'vendor' && req.user.status === 'suspended') {
+      return res.status(403).json({
+        success: false,
+        message: 'Suspended vendors cannot perform this action',
+      })
+    }
+
     next()
   }
 }

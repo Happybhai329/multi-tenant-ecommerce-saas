@@ -12,6 +12,11 @@ router.post('/register', validateRegister, async (req, res) => {
   try {
     const { name, email, password, role } = req.body
 
+    // Role protection on registration
+    if (role === 'admin') {
+      return res.status(400).json({ success: false, message: 'Direct registration as administrator is not allowed' })
+    }
+
     const existingUser = await User.findOne({ email })
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'Email already registered' })
@@ -29,6 +34,7 @@ router.post('/register', validateRegister, async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        status: user.status,
       },
       token: generateToken(user),
     })
@@ -59,6 +65,7 @@ router.post('/login', validateLogin, async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        status: user.status,
       },
       token: generateToken(user),
     })
@@ -76,6 +83,7 @@ router.get('/me', protect, (req, res) => {
       name: req.user.name,
       email: req.user.email,
       role: req.user.role,
+      status: req.user.status,
       createdAt: req.user.createdAt,
     },
   })

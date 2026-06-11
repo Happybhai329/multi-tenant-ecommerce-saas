@@ -68,19 +68,46 @@ const getProducts = async (req, res) => {
     const isVendor = req.user?.role === 'vendor'
     const isAdmin = req.user?.role === 'admin'
 
-    // --- Access control ---
+    // --- Access control and Store Status Filter ---
     if (isAdmin) {
       if (req.query.status) filter.status = req.query.status
-    } else if (isVendor) {
+      if (req.query.store) filter.store = req.query.store
+    } else if (isVendor && req.query.mine === 'true') {
       const store = await Store.findOne({ owner: req.user._id })
-      if (store && req.query.mine === 'true') {
+      if (store) {
         filter.store = store._id
         if (req.query.status) filter.status = req.query.status
       } else {
-        filter.status = 'published'
+        return res.json({
+          success: true,
+          products: [],
+          pagination: { page: 1, limit: 12, total: 0, pages: 0 },
+        })
       }
     } else {
       filter.status = 'published'
+
+      // Only show products from active stores for public
+      const activeStores = await Store.find({ status: 'active' }).select('_id')
+      const activeStoreIds = activeStores.map((s) => s._id)
+
+      if (req.query.store) {
+        if (!activeStoreIds.map((id) => id.toString()).includes(req.query.store.toString())) {
+          return res.json({
+            success: true,
+            products: [],
+            pagination: {
+              page: Math.max(1, parseInt(req.query.page) || 1),
+              limit: Math.min(50, Math.max(1, parseInt(req.query.limit) || 12)),
+              total: 0,
+              pages: 0,
+            },
+          })
+        }
+        filter.store = req.query.store
+      } else {
+        filter.store = { $in: activeStoreIds }
+      }
     }
 
     // --- Search (text search with regex fallback) ---

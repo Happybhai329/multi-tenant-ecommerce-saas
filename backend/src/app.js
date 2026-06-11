@@ -14,6 +14,8 @@ import analyticsRoutes from './routes/analyticsRoutes.js'
 import uploadRoutes from './routes/uploadRoutes.js'
 import reviewRoutes from './routes/reviewRoutes.js'
 import wishlistRoutes from './routes/wishlistRoutes.js'
+import adminRoutes from './routes/adminRoutes.js'
+import { protect, authorize } from './middleware/auth.js'
 
 const app = express()
 
@@ -55,6 +57,7 @@ app.use('/api/analytics', analyticsRoutes)
 app.use('/api/uploads', uploadRoutes)
 app.use('/api/reviews', reviewRoutes)
 app.use('/api/wishlist', wishlistRoutes)
+app.use('/api/admin', protect, authorize('admin'), adminRoutes)
 
 app.use(notFound)
 app.use(errorHandler)

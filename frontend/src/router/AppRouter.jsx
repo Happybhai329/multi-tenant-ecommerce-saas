@@ -1,8 +1,9 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
 // Layouts
 import PublicLayout from '../components/PublicLayout'
 import VendorLayout from '../components/vendor/VendorLayout'
+import AdminLayout from '../components/admin/AdminLayout'
 
 // Auth & Shared
 import ProtectedRoute from '../components/ProtectedRoute'
@@ -34,6 +35,9 @@ import PaymentFailedPage from '../pages/orders/PaymentFailedPage'
 // Dashboard pages
 import CustomerDashboard from '../pages/CustomerDashboard'
 import AdminDashboard from '../pages/AdminDashboard'
+import AdminVendors from '../pages/admin/AdminVendors'
+import AdminStores from '../pages/admin/AdminStores'
+import AdminUsers from '../pages/admin/AdminUsers'
 
 // Vendor dashboard pages
 import VendorDashboardHome from '../pages/vendor/VendorDashboardHome'
@@ -145,15 +149,21 @@ function AppRouter() {
           <Route path="settings" element={<VendorSettingsPage />} />
         </Route>
 
-        {/* ── Admin Dashboard ── */}
+        {/* ── Admin Panel (nested under AdminLayout) ── */}
         <Route
-          path="/admin/dashboard"
+          path="/admin"
           element={
             <ProtectedRoute allowedRoles={['admin']}>
-              <AdminDashboard />
+              <AdminLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="vendors" element={<AdminVendors />} />
+          <Route path="stores" element={<AdminStores />} />
+          <Route path="users" element={<AdminUsers />} />
+        </Route>
 
         {/* ── Catch-all ── */}
         <Route path="*" element={<NotFound />} />
