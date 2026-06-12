@@ -22,6 +22,10 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Not authorized, user no longer exists' })
     }
 
+    if (user.status === 'suspended') {
+      return res.status(403).json({ success: false, message: 'Your account has been suspended. Please contact support.' })
+    }
+
     req.user = user
     next()
   } catch (err) {
@@ -42,14 +46,6 @@ const authorize = (...roles) => {
       return res.status(403).json({
         success: false,
         message: `Role '${req.user.role}' is not authorized to access this route`,
-      })
-    }
-
-    // Protect against suspended vendors
-    if (req.user.role === 'vendor' && req.user.status === 'suspended') {
-      return res.status(403).json({
-        success: false,
-        message: 'Suspended vendors cannot perform this action',
       })
     }
 

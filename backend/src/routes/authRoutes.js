@@ -58,6 +58,10 @@ router.post('/login', validateLogin, async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid email or password' })
     }
 
+    if (user.status === 'suspended') {
+      return res.status(403).json({ success: false, message: 'Your account has been suspended. Please contact support.' })
+    }
+
     res.json({
       success: true,
       user: {

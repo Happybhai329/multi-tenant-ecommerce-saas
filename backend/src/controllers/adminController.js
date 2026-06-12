@@ -16,6 +16,12 @@ export const getAdminDashboard = async (req, res) => {
       revenueAgg,
       recentRegistrations,
       recentOrders,
+      activeStoresCount,
+      suspendedStoresCount,
+      activeVendorsCount,
+      suspendedVendorsCount,
+      recentStores,
+      recentVendors,
     ] = await Promise.all([
       User.countDocuments(),
       User.countDocuments({ role: 'vendor' }),
@@ -32,7 +38,13 @@ export const getAdminDashboard = async (req, res) => {
         .populate('customer', 'name email')
         .populate('store', 'name slug')
         .sort({ createdAt: -1 })
-        .limit(5)
+        .limit(5),
+      Store.countDocuments({ status: 'active' }),
+      Store.countDocuments({ status: 'suspended' }),
+      User.countDocuments({ role: 'vendor', status: 'active' }),
+      User.countDocuments({ role: 'vendor', status: 'suspended' }),
+      Store.find().populate('owner', 'name email').sort({ createdAt: -1 }).limit(5),
+      User.find({ role: 'vendor' }).select('-password').sort({ createdAt: -1 }).limit(5),
     ])
 
     const totalRevenue = revenueAgg[0]?.total || 0
@@ -47,9 +59,15 @@ export const getAdminDashboard = async (req, res) => {
         totalProducts,
         totalOrders,
         totalRevenue: Math.round(totalRevenue * 100) / 100,
+        activeStores: activeStoresCount,
+        suspendedStores: suspendedStoresCount,
+        activeVendors: activeVendorsCount,
+        suspendedVendors: suspendedVendorsCount,
       },
       recentRegistrations,
       recentOrders,
+      recentStores,
+      recentVendors,
     })
   } catch (err) {
     res.status(500).json({ success: false, message: err.message })

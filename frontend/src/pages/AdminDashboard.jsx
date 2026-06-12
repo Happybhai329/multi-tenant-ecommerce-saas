@@ -6,6 +6,8 @@ function AdminDashboard() {
   const [stats, setStats] = useState(null)
   const [recentRegistrations, setRecentRegistrations] = useState([])
   const [recentOrders, setRecentOrders] = useState([])
+  const [recentStores, setRecentStores] = useState([])
+  const [recentVendors, setRecentVendors] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -18,6 +20,8 @@ function AdminDashboard() {
           setStats(response.data.statistics)
           setRecentRegistrations(response.data.recentRegistrations)
           setRecentOrders(response.data.recentOrders)
+          setRecentStores(response.data.recentStores)
+          setRecentVendors(response.data.recentVendors)
         } else {
           setError(response.data.message || 'Failed to load dashboard data')
         }
@@ -149,6 +153,34 @@ function AdminDashboard() {
         </div>
       </div>
 
+      {/* Moderation Stats Counters */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-emerald-900/10 border border-emerald-500/20 rounded-xl p-4 flex items-center justify-between shadow-sm">
+          <span className="text-sm text-emerald-400 font-medium">Active Stores</span>
+          <span className="text-xl font-bold text-emerald-400">
+            {stats?.activeStores || 0}
+          </span>
+        </div>
+        <div className="bg-red-900/10 border border-red-500/20 rounded-xl p-4 flex items-center justify-between shadow-sm">
+          <span className="text-sm text-red-400 font-medium">Suspended Stores</span>
+          <span className="text-xl font-bold text-red-400">
+            {stats?.suspendedStores || 0}
+          </span>
+        </div>
+        <div className="bg-emerald-900/10 border border-emerald-500/20 rounded-xl p-4 flex items-center justify-between shadow-sm">
+          <span className="text-sm text-emerald-400 font-medium">Active Vendors</span>
+          <span className="text-xl font-bold text-emerald-400">
+            {stats?.activeVendors || 0}
+          </span>
+        </div>
+        <div className="bg-red-900/10 border border-red-500/20 rounded-xl p-4 flex items-center justify-between shadow-sm">
+          <span className="text-sm text-red-400 font-medium">Suspended Vendors</span>
+          <span className="text-xl font-bold text-red-400">
+            {stats?.suspendedVendors || 0}
+          </span>
+        </div>
+      </div>
+
       {/* Split section: Recent Orders & Registrations */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Recent Orders */}
@@ -243,6 +275,105 @@ function AdminDashboard() {
                         }`}>
                           {u.role}
                         </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
+                          u.status === 'suspended'
+                            ? 'bg-red-950/40 text-red-400 border-red-500/20'
+                            : 'bg-emerald-950/40 text-emerald-400 border-emerald-500/20'
+                        }`}>
+                          {u.status || 'active'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right text-xs text-gray-400">
+                        {new Date(u.createdAt).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Split section: Recent Stores & Vendors */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Recent Stores */}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-xl flex flex-col">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold text-white">Recent Stores</h3>
+            <span className="text-xs text-gray-400">Latest 5 creations</span>
+          </div>
+
+          <div className="flex-1 overflow-x-auto">
+            <table className="w-full text-left text-sm text-gray-300">
+              <thead className="bg-gray-950 text-gray-400 text-xs uppercase border-b border-gray-800">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Store</th>
+                  <th className="px-4 py-3 font-semibold">Owner</th>
+                  <th className="px-4 py-3 font-semibold text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {!recentStores || recentStores.length === 0 ? (
+                  <tr>
+                    <td colSpan="3" className="text-center py-6 text-gray-500">No stores found.</td>
+                  </tr>
+                ) : (
+                  recentStores.map((s) => (
+                    <tr key={s._id} className="hover:bg-gray-850/50 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-white truncate max-w-[150px]">{s.name}</div>
+                        <div className="text-xs text-gray-500">/{s.slug}</div>
+                      </td>
+                      <td className="px-4 py-3 truncate max-w-[120px]">
+                        {s.owner?.name || 'N/A'}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
+                          s.status === 'suspended'
+                            ? 'bg-red-950/40 text-red-400 border-red-500/20'
+                            : 'bg-emerald-950/40 text-emerald-400 border-emerald-500/20'
+                        }`}>
+                          {s.status || 'active'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Recent Vendors */}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-xl flex flex-col">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold text-white">Recent Vendor Activity</h3>
+            <span className="text-xs text-gray-400">Latest 5 vendors</span>
+          </div>
+
+          <div className="flex-1 overflow-x-auto">
+            <table className="w-full text-left text-sm text-gray-300">
+              <thead className="bg-gray-950 text-gray-400 text-xs uppercase border-b border-gray-800">
+                <tr>
+                  <th className="px-4 py-3 font-semibold">Vendor</th>
+                  <th className="px-4 py-3 font-semibold text-center">Status</th>
+                  <th className="px-4 py-3 font-semibold text-right">Joined</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {!recentVendors || recentVendors.length === 0 ? (
+                  <tr>
+                    <td colSpan="3" className="text-center py-6 text-gray-500">No vendors found.</td>
+                  </tr>
+                ) : (
+                  recentVendors.map((u) => (
+                    <tr key={u._id} className="hover:bg-gray-850/50 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-white truncate max-w-[150px]">{u.name}</div>
+                        <div className="text-xs text-gray-500 truncate max-w-[150px]">{u.email}</div>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
