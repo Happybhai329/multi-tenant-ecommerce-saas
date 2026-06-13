@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getUsers, updateUserStatus } from '../../api/adminApi'
+import Pagination from '../../components/search/Pagination'
 
 function AdminUsers() {
   const [users, setUsers] = useState([])
@@ -7,6 +8,8 @@ function AdminUsers() {
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 })
 
   const fetchUsersList = async () => {
     try {
@@ -14,9 +17,12 @@ function AdminUsers() {
       const response = await getUsers({
         search: searchTerm,
         role: roleFilter,
+        page,
+        limit: 10,
       })
       if (response.data.success) {
         setUsers(response.data.users)
+        setPagination(response.data.pagination || { page: 1, limit: 10, total: response.data.users.length, pages: 1 })
       } else {
         setError(response.data.message || 'Failed to load users')
       }
@@ -27,13 +33,18 @@ function AdminUsers() {
     }
   }
 
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setPage(1)
+  }, [searchTerm, roleFilter])
+
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       fetchUsersList()
     }, 300)
 
     return () => clearTimeout(delayDebounceFn)
-  }, [searchTerm, roleFilter])
+  }, [searchTerm, roleFilter, page])
 
   const handleToggleStatus = async (userId, currentStatus, role) => {
     const nextStatus = currentStatus === 'suspended' ? 'active' : 'suspended'
@@ -195,6 +206,15 @@ function AdminUsers() {
           </div>
         )}
       </div>
+
+      {!loading && !error && users.length > 0 && (
+        <Pagination
+          page={pagination.page}
+          pages={pagination.pages}
+          total={pagination.total}
+          onPageChange={setPage}
+        />
+      )}
     </div>
   )
 }

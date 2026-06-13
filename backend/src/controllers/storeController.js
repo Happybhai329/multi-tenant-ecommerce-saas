@@ -1,40 +1,39 @@
 import Store from '../models/Store.js'
+import { asyncHandler } from '../middleware/errorHandler.js'
 
 // POST /api/stores — Create a new store (vendor only)
-const createStore = async (req, res) => {
-  try {
-    const existingStore = await Store.findOne({ owner: req.user._id })
-    if (existingStore) {
-      return res.status(400).json({ success: false, message: 'You already have a store' })
-    }
+const createStore = asyncHandler(async (req, res) => {
+  const existingStore = await Store.findOne({ owner: req.user._id })
+  if (existingStore) {
+    res.status(400)
+    throw new Error('You already have a store')
+  }
 
-    const { name, description, logo, banner } = req.body
+  const { name, description, logo, banner } = req.body
 
-    if (!name || !name.trim()) {
-      return res.status(400).json({ success: false, message: 'Store name is required' })
-    }
+  // Check if slug would conflict
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 
-    // Check if slug would conflict
-    const slug = name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
+  const slugExists = await Store.findOne({ slug })
+  if (slugExists) {
+    res.status(409)
+    throw new Error('A store with a similar name already exists')
+  }
 
-    const slugExists = await Store.findOne({ slug })
-    if (slugExists) {
-      return res.status(409).json({ success: false, message: 'A store with a similar name already exists' })
-    }
+  const store = await Store.create({
+    name: name.trim(),
+    description,
+    logo,
+    banner,
+    owner: req.user._id,
+  })
 
-    const store = await Store.create({
-      name: name.trim(),
-      description,
-      logo,
-      banner,
-      owner: req.user._id,
-    })
-
-    res.status(201).json({
-      success: true,
+  res.status(201).json({
+    success: true,
+    data: {
       store: {
         _id: store._id,
         name: store.name,
@@ -45,39 +44,55 @@ const createStore = async (req, res) => {
         status: store.status,
         createdAt: store.createdAt,
       },
-    })
-  } catch (err) {
-    if (err.code === 11000) {
-      return res.status(409).json({ success: false, message: 'Store name or slug already taken' })
-    }
-    res.status(500).json({ success: false, message: err.message })
-  }
-}
+    },
+  })
+})
 
 // GET /api/stores — List all active stores (public)
-const getAllStores = async (req, res) => {
-  try {
-    const stores = await Store.find({ status: 'active' })
+const getAllStores = asyncHandler(async (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page) || 1)
+  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 12))
+  const skip = (page - 1) * limit
+
+  const filter = { status: 'active' }
+
+  const [total, stores] = await Promise.all([
+    Store.countDocuments(filter),
+    Store.find(filter)
       .select('name slug description logo banner createdAt')
       .sort('-createdAt')
+      .skip(skip)
+      .limit(limit),
+  ])
 
-    res.json({ success: true, count: stores.length, stores })
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message })
-  }
-}
+  const pages = Math.ceil(total / limit)
+
+  res.json({
+    success: true,
+    data: {
+      stores,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages,
+      },
+    },
+  })
+})
 
 // GET /api/stores/my-store — Get current vendor's store
-const getMyStore = async (req, res) => {
-  try {
-    const store = await Store.findOne({ owner: req.user._id })
+const getMyStore = asyncHandler(async (req, res) => {
+  const store = await Store.findOne({ owner: req.user._id })
 
-    if (!store) {
-      return res.status(404).json({ success: false, message: 'You have not created a store yet' })
-    }
+  if (!store) {
+    res.status(404)
+    throw new Error('You have not created a store yet')
+  }
 
-    res.json({
-      success: true,
+  res.json({
+    success: true,
+    data: {
       store: {
         _id: store._id,
         name: store.name,
@@ -89,64 +104,64 @@ const getMyStore = async (req, res) => {
         createdAt: store.createdAt,
         updatedAt: store.updatedAt,
       },
-    })
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message })
-  }
-}
+    },
+  })
+})
 
 // GET /api/stores/:slug — Get a public store by slug
-const getStoreBySlug = async (req, res) => {
-  try {
-    const store = await Store.findOne({ slug: req.params.slug, status: 'active' })
-      .select('name slug description logo banner createdAt')
+const getStoreBySlug = asyncHandler(async (req, res) => {
+  const store = await Store.findOne({ slug: req.params.slug, status: 'active' })
+    .select('name slug description logo banner createdAt')
 
-    if (!store) {
-      return res.status(404).json({ success: false, message: 'Store not found' })
-    }
-
-    res.json({ success: true, store })
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message })
+  if (!store) {
+    res.status(404)
+    throw new Error('Store not found')
   }
-}
+
+  res.json({
+    success: true,
+    data: { store },
+  })
+})
 
 // PATCH /api/stores/my-store — Update vendor's own store
-const updateMyStore = async (req, res) => {
-  try {
-    const store = await Store.findOne({ owner: req.user._id })
+const updateMyStore = asyncHandler(async (req, res) => {
+  const store = await Store.findOne({ owner: req.user._id })
 
-    if (!store) {
-      return res.status(404).json({ success: false, message: 'You have not created a store yet' })
+  if (!store) {
+    res.status(404)
+    throw new Error('You have not created a store yet')
+  }
+
+  const { name, description, logo, banner } = req.body
+
+  // If name is changing, check slug uniqueness
+  if (name !== undefined && name.trim() !== store.name) {
+    const newSlug = name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+
+    const slugExists = await Store.findOne({ slug: newSlug, _id: { $ne: store._id } })
+    if (slugExists) {
+      res.status(409)
+      throw new Error('A store with a similar name already exists')
     }
 
-    const { name, description, logo, banner } = req.body
+    store.name = name.trim()
+    store.slug = newSlug
+  }
 
-    // If name is changing, check slug uniqueness
-    if (name !== undefined && name.trim() !== store.name) {
-      const newSlug = name
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
+  if (description !== undefined) store.description = description
+  if (logo !== undefined) store.logo = logo
+  if (banner !== undefined) store.banner = banner
 
-      const slugExists = await Store.findOne({ slug: newSlug, _id: { $ne: store._id } })
-      if (slugExists) {
-        return res.status(409).json({ success: false, message: 'A store with a similar name already exists' })
-      }
+  await store.save()
 
-      store.name = name.trim()
-      store.slug = newSlug
-    }
-
-    if (description !== undefined) store.description = description
-    if (logo !== undefined) store.logo = logo
-    if (banner !== undefined) store.banner = banner
-
-    await store.save()
-
-    res.json({
-      success: true,
+  res.json({
+    success: true,
+    data: {
       message: 'Store updated successfully',
       store: {
         _id: store._id,
@@ -159,14 +174,8 @@ const updateMyStore = async (req, res) => {
         createdAt: store.createdAt,
         updatedAt: store.updatedAt,
       },
-    })
-  } catch (err) {
-    if (err.code === 11000) {
-      return res.status(409).json({ success: false, message: 'Store name or slug already taken' })
-    }
-    res.status(500).json({ success: false, message: err.message })
-  }
-}
+    },
+  })
+})
 
 export { createStore, getAllStores, getMyStore, getStoreBySlug, updateMyStore }
-

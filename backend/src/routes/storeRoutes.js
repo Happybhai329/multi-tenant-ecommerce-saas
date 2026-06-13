@@ -1,6 +1,6 @@
 import express from 'express'
 import { protect, authorize } from '../middleware/auth.js'
-import { validateStoreUpdate } from '../middleware/validate.js'
+import { validateStoreCreate, validateStoreUpdate } from '../middleware/validate.js'
 import { createStore, getAllStores, getMyStore, getStoreBySlug, updateMyStore } from '../controllers/storeController.js'
 
 const router = express.Router()
@@ -9,7 +9,7 @@ const router = express.Router()
 router.get('/', getAllStores)
 
 // Vendor-only routes
-router.post('/', protect, authorize('vendor'), createStore)
+router.post('/', protect, authorize('vendor'), validateStoreCreate, createStore)
 router.get('/my-store', protect, authorize('vendor'), getMyStore)
 router.patch('/my-store', protect, authorize('vendor'), validateStoreUpdate, updateMyStore)
 

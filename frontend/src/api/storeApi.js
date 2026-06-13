@@ -1,8 +1,8 @@
 import api from './axios'
 
 // GET /api/stores — fetch all active stores (public)
-export const fetchAllStores = () => {
-  return api.get('/stores')
+export const fetchAllStores = (params = {}) => {
+  return api.get('/stores', { params })
 }
 
 // GET /api/stores/:slug — fetch a single store by slug (public)

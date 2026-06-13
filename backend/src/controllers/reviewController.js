@@ -1,5 +1,6 @@
 import Review from '../models/Review.js'
 import Product from '../models/Product.js'
+import { asyncHandler } from '../middleware/errorHandler.js'
 
 // Helper function to update product rating stats
 const updateProductRating = async (productId) => {
@@ -33,83 +34,87 @@ const updateProductRating = async (productId) => {
 // @desc    Create new review
 // @route   POST /api/reviews
 // @access  Private (Customer only)
-export const createReview = async (req, res) => {
-  try {
-    const { product: productId, rating, comment } = req.body
+const createReview = asyncHandler(async (req, res) => {
+  const { product: productId, rating, comment } = req.body
 
-    if (req.user.role === 'vendor') {
-      return res.status(403).json({ success: false, message: 'Vendors cannot review products' })
-    }
-
-    const product = await Product.findById(productId)
-    if (!product) {
-      return res.status(404).json({ success: false, message: 'Product not found' })
-    }
-
-    // Check if user already reviewed
-    const alreadyReviewed = await Review.findOne({
-      customer: req.user._id,
-      product: productId
-    })
-
-    if (alreadyReviewed) {
-      return res.status(400).json({ success: false, message: 'You have already reviewed this product' })
-    }
-
-    const review = await Review.create({
-      product: productId,
-      customer: req.user._id,
-      rating: Number(rating),
-      comment
-    })
-
-    await updateProductRating(product._id)
-
-    res.status(201).json({ success: true, review })
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message })
+  if (req.user.role === 'vendor') {
+    res.status(403)
+    throw new Error('Vendors cannot review products')
   }
-}
+
+  const product = await Product.findById(productId)
+  if (!product) {
+    res.status(404)
+    throw new Error('Product not found')
+  }
+
+  // Check if user already reviewed
+  const alreadyReviewed = await Review.findOne({
+    customer: req.user._id,
+    product: productId
+  })
+
+  if (alreadyReviewed) {
+    res.status(400)
+    throw new Error('You have already reviewed this product')
+  }
+
+  const review = await Review.create({
+    product: productId,
+    customer: req.user._id,
+    rating: Number(rating),
+    comment
+  })
+
+  await updateProductRating(product._id)
+
+  res.status(201).json({
+    success: true,
+    data: { review }
+  })
+})
 
 // @desc    Get reviews for a product
 // @route   GET /api/reviews/product/:productId
 // @access  Public
-export const getProductReviews = async (req, res) => {
-  try {
-    const reviews = await Review.find({ product: req.params.productId })
-      .populate('customer', 'name')
-      .sort('-createdAt')
+const getProductReviews = asyncHandler(async (req, res) => {
+  const reviews = await Review.find({ product: req.params.productId })
+    .populate('customer', 'name')
+    .sort('-createdAt')
 
-    res.json({ success: true, count: reviews.length, reviews })
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message })
-  }
-}
+  res.json({
+    success: true,
+    data: { reviews }
+  })
+})
 
 // @desc    Delete a review
 // @route   DELETE /api/reviews/:id
 // @access  Private
-export const deleteReview = async (req, res) => {
-  try {
-    const review = await Review.findById(req.params.id)
+const deleteReview = asyncHandler(async (req, res) => {
+  const review = await Review.findById(req.params.id)
 
-    if (!review) {
-      return res.status(404).json({ success: false, message: 'Review not found' })
-    }
-
-    // Check ownership or admin
-    if (review.customer.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Not authorized to delete this review' })
-    }
-
-    const productId = review.product
-
-    await review.deleteOne()
-
-    await updateProductRating(productId)
-
-    res.json({ success: true, message: 'Review removed' })
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message })
+  if (!review) {
+    res.status(404)
+    throw new Error('Review not found')
   }
-}
+
+  // Check ownership or admin
+  if (review.customer.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    res.status(403)
+    throw new Error('Not authorized to delete this review')
+  }
+
+  const productId = review.product
+
+  await review.deleteOne()
+
+  await updateProductRating(productId)
+
+  res.json({
+    success: true,
+    data: { message: 'Review removed' }
+  })
+})
+
+export { createReview, getProductReviews, deleteReview }

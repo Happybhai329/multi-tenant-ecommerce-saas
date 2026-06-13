@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getVendors, updateVendorStatus } from '../../api/adminApi'
+import Pagination from '../../components/search/Pagination'
 
 function AdminVendors() {
   const [vendors, setVendors] = useState([])
@@ -7,6 +8,8 @@ function AdminVendors() {
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 })
 
   const fetchVendorsList = async () => {
     try {
@@ -14,9 +17,12 @@ function AdminVendors() {
       const response = await getVendors({
         search: searchTerm,
         status: statusFilter,
+        page,
+        limit: 10,
       })
       if (response.data.success) {
         setVendors(response.data.vendors)
+        setPagination(response.data.pagination || { page: 1, limit: 10, total: response.data.vendors.length, pages: 1 })
       } else {
         setError(response.data.message || 'Failed to load vendors')
       }
@@ -27,14 +33,18 @@ function AdminVendors() {
     }
   }
 
+  // Reset page to 1 when filters change
   useEffect(() => {
-    // Debounce search slightly or fetch immediately on filter change
+    setPage(1)
+  }, [searchTerm, statusFilter])
+
+  useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       fetchVendorsList()
     }, 300)
 
     return () => clearTimeout(delayDebounceFn)
-  }, [searchTerm, statusFilter])
+  }, [searchTerm, statusFilter, page])
 
   const handleToggleStatus = async (vendorId, currentStatus) => {
     const nextStatus = currentStatus === 'suspended' ? 'active' : 'suspended'
@@ -44,7 +54,6 @@ function AdminVendors() {
     try {
       const response = await updateVendorStatus(vendorId, nextStatus)
       if (response.data.success) {
-        // Update local state instead of refetching the whole list
         setVendors((prevVendors) =>
           prevVendors.map((vendor) =>
             vendor._id === vendorId ? { ...vendor, status: nextStatus } : vendor
@@ -185,6 +194,15 @@ function AdminVendors() {
           </div>
         )}
       </div>
+
+      {!loading && !error && vendors.length > 0 && (
+        <Pagination
+          page={pagination.page}
+          pages={pagination.pages}
+          total={pagination.total}
+          onPageChange={setPage}
+        />
+      )}
     </div>
   )
 }

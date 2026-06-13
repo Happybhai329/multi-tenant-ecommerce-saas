@@ -62,8 +62,8 @@ async function testVendorCreatesStore() {
 
   console.assert(status === 201, `Expected 201, got ${status}`)
   console.assert(data.success === true, 'Expected success: true')
-  console.assert(data.store.slug === 'test-vendor-store', `Expected slug 'test-vendor-store', got '${data.store.slug}'`)
-  console.assert(data.store.status === 'active', 'Expected status active')
+  console.assert(data.data.store.slug === 'test-vendor-store', `Expected slug 'test-vendor-store', got '${data.data.store.slug}'`)
+  console.assert(data.data.store.status === 'active', 'Expected status active')
   console.log('✅ Vendor creates store successfully')
   return data
 }
@@ -94,8 +94,8 @@ async function testFetchStoreBySlug() {
   const { status, data } = await request('GET', '/stores/test-vendor-store')
 
   console.assert(status === 200, `Expected 200, got ${status}`)
-  console.assert(data.store.slug === 'test-vendor-store', 'Slug mismatch')
-  console.assert(data.store.name === 'Test Vendor Store', 'Name mismatch')
+  console.assert(data.data.store.slug === 'test-vendor-store', 'Slug mismatch')
+  console.assert(data.data.store.name === 'Test Vendor Store', 'Name mismatch')
   console.log('✅ Fetch public store by slug works')
 }
 
@@ -105,7 +105,7 @@ async function testGetMyStore() {
   })
 
   console.assert(status === 200, `Expected 200, got ${status}`)
-  console.assert(data.store.name === 'Test Vendor Store', 'Name mismatch')
+  console.assert(data.data.store.name === 'Test Vendor Store', 'Name mismatch')
   console.log('✅ Vendor can fetch their own store')
 }
 
@@ -113,8 +113,8 @@ async function testGetAllStores() {
   const { status, data } = await request('GET', '/stores')
 
   console.assert(status === 200, `Expected 200, got ${status}`)
-  console.assert(Array.isArray(data.stores), 'Expected stores array')
-  console.assert(data.count >= 1, 'Expected at least 1 store')
+  console.assert(Array.isArray(data.data.stores), 'Expected stores array')
+  console.assert(data.data.pagination.total >= 1, 'Expected at least 1 store')
   console.log('✅ Get all public stores works')
 }
 

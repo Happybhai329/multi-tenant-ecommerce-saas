@@ -4,12 +4,12 @@ import {
   addToWishlist,
   removeFromWishlist,
 } from '../controllers/wishlistController.js'
-import { protect } from '../middleware/auth.js'
+import { protect, authorize } from '../middleware/auth.js'
 
 const router = express.Router()
 
-// All wishlist routes require authentication
-router.use(protect)
+// All wishlist routes require authentication and customer role
+router.use(protect, authorize('customer'))
 
 router.route('/')
   .get(getWishlist)

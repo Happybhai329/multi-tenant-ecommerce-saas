@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getStores, updateStoreStatus } from '../../api/adminApi'
+import Pagination from '../../components/search/Pagination'
 
 function AdminStores() {
   const [stores, setStores] = useState([])
@@ -7,6 +8,8 @@ function AdminStores() {
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 })
 
   const fetchStoresList = async () => {
     try {
@@ -14,9 +17,12 @@ function AdminStores() {
       const response = await getStores({
         search: searchTerm,
         status: statusFilter,
+        page,
+        limit: 10,
       })
       if (response.data.success) {
         setStores(response.data.stores)
+        setPagination(response.data.pagination || { page: 1, limit: 10, total: response.data.stores.length, pages: 1 })
       } else {
         setError(response.data.message || 'Failed to load stores')
       }
@@ -27,13 +33,18 @@ function AdminStores() {
     }
   }
 
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setPage(1)
+  }, [searchTerm, statusFilter])
+
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       fetchStoresList()
     }, 300)
 
     return () => clearTimeout(delayDebounceFn)
-  }, [searchTerm, statusFilter])
+  }, [searchTerm, statusFilter, page])
 
   const handleToggleStatus = async (storeId, currentStatus) => {
     const nextStatus = currentStatus === 'suspended' ? 'active' : 'suspended'
@@ -178,6 +189,15 @@ function AdminStores() {
           </div>
         )}
       </div>
+
+      {!loading && !error && stores.length > 0 && (
+        <Pagination
+          page={pagination.page}
+          pages={pagination.pages}
+          total={pagination.total}
+          onPageChange={setPage}
+        />
+      )}
     </div>
   )
 }

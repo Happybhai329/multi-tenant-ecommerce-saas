@@ -6,8 +6,8 @@ export const createOrder = (orderData) => {
 }
 
 // GET /api/orders/my-orders — fetch current user's orders
-export const fetchMyOrders = () => {
-  return api.get('/orders/my-orders')
+export const fetchMyOrders = (params = {}) => {
+  return api.get('/orders/my-orders', { params })
 }
 
 // GET /api/orders/:id — fetch single order by ID

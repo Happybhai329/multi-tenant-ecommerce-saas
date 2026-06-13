@@ -53,6 +53,9 @@ storeSchema.pre('validate', function () {
   }
 })
 
+storeSchema.index({ status: 1 })
+storeSchema.index({ createdAt: -1 })
+
 const Store = mongoose.model('Store', storeSchema)
 
 export default Store
