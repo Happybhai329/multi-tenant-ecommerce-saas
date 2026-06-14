@@ -1,10 +1,12 @@
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
-import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
+import env from './config/env.js'
 import { notFound, errorHandler } from './middleware/errorHandler.js'
+import { requestId, requestLogger } from './middleware/requestLogger.js'
 import authRoutes from './routes/authRoutes.js'
+import healthRoutes from './routes/healthRoutes.js'
 import testRoutes from './routes/testRoutes.js'
 import storeRoutes from './routes/storeRoutes.js'
 import productRoutes from './routes/productRoutes.js'
@@ -19,17 +21,33 @@ import { protect, authorize } from './middleware/auth.js'
 
 const app = express()
 
+app.disable('x-powered-by')
+
 app.use(helmet())
+app.use(requestId)
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true
+  origin(origin, callback) {
+    if (!origin || env.clientUrls.includes(origin)) {
+      return callback(null, true)
+    }
+
+    const error = new Error('CORS policy does not allow this origin')
+    error.statusCode = 403
+    error.code = 'CORS_ORIGIN_DENIED'
+    return callback(error)
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
+  exposedHeaders: ['X-Request-Id'],
 }))
+app.use(requestLogger)
 
 // ── Stripe webhook needs raw body — must be registered BEFORE express.json() ──
 // The route-level express.raw() in paymentRoutes handles this,
 // but we must also skip express.json() for the webhook path.
 app.use((req, res, next) => {
-  if (req.originalUrl === '/api/payments/webhook') {
+  if (req.path === '/api/payments/webhook') {
     next()
   } else {
     express.json()(req, res, next)
@@ -39,14 +57,11 @@ app.use((req, res, next) => {
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
 
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'))
-}
-
 app.get('/', (req, res) => {
   res.json({ message: 'API is running...' })
 })
 
+app.use('/api', healthRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/test', testRoutes)
 app.use('/api/stores', storeRoutes)

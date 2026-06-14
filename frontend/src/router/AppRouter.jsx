@@ -7,6 +7,7 @@ import AdminLayout from '../components/admin/AdminLayout'
 
 // Auth & Shared
 import ProtectedRoute from '../components/ProtectedRoute'
+import AuthSessionWatcher from '../components/AuthSessionWatcher'
 import NotFound from '../pages/NotFound'
 
 // Public pages
@@ -52,6 +53,7 @@ import VendorSettingsPage from '../pages/vendor/VendorSettingsPage'
 function AppRouter() {
   return (
     <BrowserRouter>
+      <AuthSessionWatcher />
       <Routes>
         {/* ── Public pages (with shared Navbar + Footer) ── */}
         <Route element={<PublicLayout />}>

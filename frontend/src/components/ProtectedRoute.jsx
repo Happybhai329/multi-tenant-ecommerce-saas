@@ -6,7 +6,7 @@ function ProtectedRoute({ children, allowedRoles }) {
   const location = useLocation()
 
   // 1. If not logged in, redirect to login page and remember where they wanted to go
-  if (!token) {
+  if (!token || !user) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 

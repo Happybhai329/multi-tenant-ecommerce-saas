@@ -2,10 +2,21 @@ import Order from '../models/Order.js'
 import Payment from '../models/Payment.js'
 import stripe from '../config/stripe.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
+import logger from '../utils/logger.js'
 
-// POST /api/payments/create-intent — Create a Stripe payment intent for an order
+// POST /api/payments/create-intent - Create a Stripe payment intent for an order
 const createPaymentIntent = asyncHandler(async (req, res) => {
   const { orderId } = req.body
+
+  if (!stripe) {
+    logger.event('payment.intent.blocked', {
+      requestId: req.id,
+      userId: req.user._id,
+      reason: 'stripe_not_configured',
+    })
+    res.status(503)
+    throw new Error('Payment service is not configured')
+  }
 
   if (!orderId) {
     res.status(400)
@@ -30,6 +41,14 @@ const createPaymentIntent = asyncHandler(async (req, res) => {
 
   const existingPayment = await Payment.findOne({ order: orderId, status: 'pending' })
   if (existingPayment) {
+    logger.event('payment.intent.reused', {
+      requestId: req.id,
+      userId: req.user._id,
+      orderId,
+      paymentId: existingPayment._id,
+      paymentIntentId: existingPayment.paymentIntentId,
+    })
+
     return res.json({
       success: true,
       data: {
@@ -60,6 +79,12 @@ const createPaymentIntent = asyncHandler(async (req, res) => {
       },
     })
   } catch (stripeErr) {
+    logger.event('payment.intent.failed', {
+      requestId: req.id,
+      userId: req.user._id,
+      orderId,
+      reason: stripeErr.message,
+    })
     res.status(400)
     throw new Error(`Payment error: ${stripeErr.message}`)
   }
@@ -77,6 +102,17 @@ const createPaymentIntent = asyncHandler(async (req, res) => {
   order.payment = payment._id
   await order.save()
 
+  logger.event('payment.intent.created', {
+    requestId: req.id,
+    userId: req.user._id,
+    orderId: order._id,
+    orderNumber: order.orderNumber,
+    paymentId: payment._id,
+    paymentIntentId: paymentIntent.id,
+    amount: amountInCents,
+    currency: 'usd',
+  })
+
   res.status(201).json({
     success: true,
     data: {
@@ -88,7 +124,7 @@ const createPaymentIntent = asyncHandler(async (req, res) => {
   })
 })
 
-// GET /api/payments/:id — Get payment details
+// GET /api/payments/:id - Get payment details
 const getPaymentById = asyncHandler(async (req, res) => {
   const payment = await Payment.findById(req.params.id)
     .populate({

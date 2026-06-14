@@ -1,11 +1,15 @@
 import Stripe from 'stripe'
+import env from './env.js'
+import logger from '../utils/logger.js'
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  console.warn('⚠ STRIPE_SECRET_KEY is not set in environment variables')
+let stripe = null
+
+if (env.stripeSecretKey) {
+  stripe = new Stripe(env.stripeSecretKey, {
+    apiVersion: '2024-12-18.acacia',
+  })
+} else {
+  logger.warn('STRIPE_SECRET_KEY is not configured; Stripe client is disabled')
 }
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
-  apiVersion: '2024-12-18.acacia',
-})
 
 export default stripe

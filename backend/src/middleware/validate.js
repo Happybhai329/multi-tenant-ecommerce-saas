@@ -1,6 +1,7 @@
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const urlRegex = /^https?:\/\/.+/i
 const objectIdRegex = /^[0-9a-fA-F]{24}$/
+const passwordMinLength = 8
 
 const VALID_ORDER_TRANSITIONS = {
   pending: ['processing'],
@@ -10,8 +11,35 @@ const VALID_ORDER_TRANSITIONS = {
   cancelled: [],
 }
 
+const getPasswordValidationErrors = (password) => {
+  const errors = []
+
+  if (!password) {
+    errors.push('Password is required')
+    return errors
+  }
+
+  if (password.length < passwordMinLength) {
+    errors.push(`Password must be at least ${passwordMinLength} characters`)
+  }
+
+  if (!/[a-z]/.test(password)) {
+    errors.push('Password must include a lowercase letter')
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Password must include an uppercase letter')
+  }
+
+  if (!/\d/.test(password)) {
+    errors.push('Password must include a number')
+  }
+
+  return errors
+}
+
 const validateRegister = (req, res, next) => {
-  const { name, email, password } = req.body
+  const { name, email, password, role } = req.body
   const errors = []
 
   if (!name || !name.trim()) {
@@ -24,10 +52,10 @@ const validateRegister = (req, res, next) => {
     errors.push('Please provide a valid email address')
   }
 
-  if (!password) {
-    errors.push('Password is required')
-  } else if (password.length < 6) {
-    errors.push('Password must be at least 6 characters')
+  errors.push(...getPasswordValidationErrors(password))
+
+  if (role !== undefined && !['customer', 'vendor'].includes(role)) {
+    errors.push('Role must be customer or vendor')
   }
 
   if (errors.length > 0) {

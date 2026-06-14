@@ -10,11 +10,17 @@ try {
 } catch (err) {
   console.error('Error parsing stored user data:', err)
   localStorage.removeItem('user')
+  localStorage.removeItem('token')
+}
+
+const initialToken = initialUser ? localStorage.getItem('token') : null
+if (!initialUser && localStorage.getItem('token')) {
+  localStorage.removeItem('token')
 }
 
 const initialState = {
   user: initialUser,
-  token: localStorage.getItem('token') || null,
+  token: initialToken,
   loading: false,
   error: null,
 }
@@ -51,12 +57,21 @@ const authSlice = createSlice({
       localStorage.removeItem('token')
       localStorage.removeItem('user')
     },
+    sessionExpired: (state, action) => {
+      state.user = null
+      state.token = null
+      state.loading = false
+      state.error = action.payload || 'Your session has expired. Please sign in again.'
+
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+    },
     clearError: (state) => {
       state.error = null
     }
   }
 })
 
-export const { authStart, authSuccess, authFailure, logout, clearError } = authSlice.actions
+export const { authStart, authSuccess, authFailure, logout, sessionExpired, clearError } = authSlice.actions
 
 export default authSlice.reducer

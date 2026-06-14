@@ -4,6 +4,7 @@ import Store from '../models/Store.js'
 import { VALID_ORDER_TRANSITIONS } from '../middleware/validate.js'
 import { sendOrderConfirmationEmail, sendOrderStatusUpdateEmail } from '../utils/emailService.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
+import logger from '../utils/logger.js'
 
 // POST /api/orders — Create order(s) from cart items (customer only)
 const createOrder = asyncHandler(async (req, res) => {
@@ -90,8 +91,20 @@ const createOrder = asyncHandler(async (req, res) => {
   // ── Send order confirmation emails ──
   for (const order of createdOrders) {
     sendOrderConfirmationEmail(req.user.email, order._id.toString(), order.items, order.totalAmount)
-      .catch((err) => console.error('Failed to send order confirmation email:', err))
+      .catch((err) => logger.warn('Failed to send order confirmation email', {
+        requestId: req.id,
+        orderId: order._id,
+        error: err.message,
+      }))
   }
+
+  logger.event('order.create.success', {
+    requestId: req.id,
+    customerId: req.user._id,
+    orderCount: createdOrders.length,
+    orderIds: createdOrders.map((order) => order._id),
+    totalAmount: createdOrders.reduce((sum, order) => sum + order.totalAmount, 0),
+  })
 
   res.status(201).json({
     success: true,
@@ -210,8 +223,20 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   // Send order status update email asynchronously
   if (updatedOrder.customer && updatedOrder.customer.email) {
     sendOrderStatusUpdateEmail(updatedOrder.customer.email, updatedOrder._id.toString(), orderStatus)
-      .catch((err) => console.error('Failed to send order status email:', err))
+      .catch((err) => logger.warn('Failed to send order status email', {
+        requestId: req.id,
+        orderId: updatedOrder._id,
+        error: err.message,
+      }))
   }
+
+  logger.event('order.status.updated', {
+    requestId: req.id,
+    vendorId: req.user._id,
+    orderId: updatedOrder._id,
+    orderNumber: updatedOrder.orderNumber,
+    orderStatus,
+  })
 
   res.json({
     success: true,

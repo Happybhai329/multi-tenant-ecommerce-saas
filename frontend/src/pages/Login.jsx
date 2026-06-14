@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import api from '../api/axios'
+import api, { getApiErrorMessage } from '../api/axios'
 import { authStart, authSuccess, authFailure, clearError } from '../features/auth/authSlice'
 
 function Login() {
@@ -43,8 +43,6 @@ function Login() {
     
     if (!password) {
       errors.password = 'Password is required'
-    } else if (password.length < 6) {
-      errors.password = 'Password must be at least 6 characters'
     }
 
     setValidationErrors(errors)
@@ -70,7 +68,7 @@ function Login() {
         dispatch(authFailure(response.data.message || 'Login failed'))
       }
     } catch (err) {
-      const errMsg = err.response?.data?.message || err.message || 'Server connection error'
+      const errMsg = err.userMessage || getApiErrorMessage(err)
       dispatch(authFailure(errMsg))
     }
   }

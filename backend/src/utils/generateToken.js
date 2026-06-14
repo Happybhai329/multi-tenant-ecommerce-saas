@@ -1,10 +1,15 @@
 import jwt from 'jsonwebtoken'
+import env from '../config/env.js'
 
 const generateToken = (user) => {
+  if (!env.jwtSecret) {
+    throw new Error('JWT_SECRET is not configured')
+  }
+
   return jwt.sign(
     { id: user._id, role: user.role },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE || '7d' }
+    env.jwtSecret,
+    { expiresIn: env.jwtExpire }
   )
 }
 

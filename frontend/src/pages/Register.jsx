@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import api from '../api/axios'
+import api, { getApiErrorMessage } from '../api/axios'
 import { authStart, authSuccess, authFailure, clearError } from '../features/auth/authSlice'
 
 function Register() {
@@ -49,13 +49,19 @@ function Register() {
 
     if (!password) {
       errors.password = 'Password is required'
-    } else if (password.length < 6) {
-      errors.password = 'Password must be at least 6 characters'
+    } else if (password.length < 8) {
+      errors.password = 'Password must be at least 8 characters'
+    } else if (!/[a-z]/.test(password)) {
+      errors.password = 'Password must include a lowercase letter'
+    } else if (!/[A-Z]/.test(password)) {
+      errors.password = 'Password must include an uppercase letter'
+    } else if (!/\d/.test(password)) {
+      errors.password = 'Password must include a number'
     }
 
     if (!role) {
       errors.role = 'Role is required'
-    } else if (!['customer', 'vendor', 'admin'].includes(role)) {
+    } else if (!['customer', 'vendor'].includes(role)) {
       errors.role = 'Invalid role selected'
     }
 
@@ -93,7 +99,7 @@ function Register() {
         dispatch(authFailure(response.data.message || 'Registration failed'))
       }
     } catch (err) {
-      const errMsg = err.response?.data?.message || err.message || 'Server connection error'
+      const errMsg = err.userMessage || getApiErrorMessage(err)
       dispatch(authFailure(errMsg))
     }
   }
@@ -251,7 +257,6 @@ function Register() {
                 >
                   <option value="customer">Customer</option>
                   <option value="vendor">Vendor (Store Owner)</option>
-                  <option value="admin">Administrator</option>
                 </select>
               </div>
               {validationErrors.role && (

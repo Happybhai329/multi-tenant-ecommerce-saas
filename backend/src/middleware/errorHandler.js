@@ -1,3 +1,5 @@
+import logger from '../utils/logger.js'
+
 export const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next)
 }
@@ -8,7 +10,7 @@ export const notFound = (req, res, next) => {
 }
 
 export const errorHandler = (err, req, res, next) => {
-  let statusCode = res.statusCode === 200 ? 500 : res.statusCode
+  let statusCode = err.statusCode || (res.statusCode === 200 ? 500 : res.statusCode)
   let message = err.message
 
   // Mongoose validation error
@@ -35,16 +37,46 @@ export const errorHandler = (err, req, res, next) => {
   // JsonWebTokenError / TokenExpiredError
   if (err.name === 'JsonWebTokenError') {
     statusCode = 401
-    message = 'Not authorized, token invalid'
+    err.code = 'AUTH_TOKEN_INVALID'
+    message = 'Your session is invalid. Please sign in again.'
   }
   if (err.name === 'TokenExpiredError') {
     statusCode = 401
-    message = 'Not authorized, token expired'
+    err.code = 'AUTH_TOKEN_EXPIRED'
+    message = 'Your session has expired. Please sign in again.'
   }
 
-  res.status(statusCode).json({
+  if (statusCode >= 500) {
+    logger.error('Request failed', {
+      requestId: req.id,
+      method: req.method,
+      path: req.originalUrl,
+      statusCode,
+      error: message,
+    })
+  } else if (statusCode === 429 || statusCode === 401 || statusCode === 403) {
+    logger.warn('Request rejected', {
+      requestId: req.id,
+      method: req.method,
+      path: req.originalUrl,
+      statusCode,
+      code: err.code,
+      error: message,
+    })
+  }
+
+  const response = {
     success: false,
     message,
-    stack: process.env.NODE_ENV === 'production' ? null : err.stack,
-  })
+  }
+
+  if (err.code) {
+    response.code = err.code
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    response.stack = err.stack
+  }
+
+  res.status(statusCode).json(response)
 }
