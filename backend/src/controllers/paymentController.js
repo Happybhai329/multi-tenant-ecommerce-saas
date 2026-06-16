@@ -152,4 +152,47 @@ const getPaymentById = asyncHandler(async (req, res) => {
   })
 })
 
-export { createPaymentIntent, getPaymentById }
+// POST /api/payments/confirm-mock — confirm mock payment status in dev environment
+const confirmMockPayment = asyncHandler(async (req, res) => {
+  const { paymentIntentId, status } = req.body
+
+  if (!paymentIntentId) {
+    res.status(400)
+    throw new Error('Payment Intent ID is required')
+  }
+
+  const payment = await Payment.findOne({ paymentIntentId })
+  if (!payment) {
+    res.status(404)
+    throw new Error('Payment record not found')
+  }
+
+  if (status === 'success') {
+    payment.status = 'succeeded'
+    payment.paidAt = new Date()
+    await payment.save()
+
+    const order = await Order.findById(payment.order)
+    if (order) {
+      order.paymentStatus = 'paid'
+      order.orderStatus = 'processing'
+      await order.save()
+    }
+  } else {
+    payment.status = 'failed'
+    await payment.save()
+
+    const order = await Order.findById(payment.order)
+    if (order) {
+      order.paymentStatus = 'pending'
+      await order.save()
+    }
+  }
+
+  res.json({
+    success: true,
+    message: 'Payment simulation updated successfully',
+  })
+})
+
+export { createPaymentIntent, getPaymentById, confirmMockPayment }

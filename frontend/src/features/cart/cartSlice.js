@@ -38,10 +38,13 @@ const cartSlice = createSlice({
             slug: product.slug,
             price: product.price,
             comparePrice: product.comparePrice || null,
-            image:
-              product.images && product.images.length > 0
-                ? product.images[0]
-                : null,
+            image: (() => {
+              if (!product.images || product.images.length === 0) return null
+              const primaryImg = product.images.find((img) => img && typeof img === 'object' && img.isPrimary)
+              if (primaryImg && primaryImg.url) return primaryImg.url
+              const firstImg = product.images[0]
+              return firstImg && typeof firstImg === 'object' ? firstImg.url : firstImg
+            })(),
             stock: product.stock,
             store: product.store
               ? { _id: product.store._id, name: product.store.name, slug: product.store.slug }

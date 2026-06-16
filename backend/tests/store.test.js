@@ -1,6 +1,5 @@
+import 'dotenv/config'
 import mongoose from 'mongoose'
-import dotenv from 'dotenv'
-dotenv.config()
 
 import User from '../src/models/User.js'
 import Store from '../src/models/Store.js'

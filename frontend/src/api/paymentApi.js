@@ -9,3 +9,8 @@ export const createPaymentIntent = (orderId) => {
 export const fetchPaymentById = (id) => {
   return api.get(`/payments/${id}`)
 }
+
+// POST /api/payments/confirm-mock — confirm mock payment
+export const confirmMockPayment = (paymentIntentId, status) => {
+  return api.post('/payments/confirm-mock', { paymentIntentId, status })
+}

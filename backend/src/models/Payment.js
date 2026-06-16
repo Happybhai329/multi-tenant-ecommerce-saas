@@ -46,7 +46,6 @@ const paymentSchema = new mongoose.Schema(
 )
 
 paymentSchema.index({ order: 1 })
-paymentSchema.index({ paymentIntentId: 1 }, { unique: true })
 paymentSchema.index({ customer: 1, createdAt: -1 })
 
 const Payment = mongoose.model('Payment', paymentSchema)

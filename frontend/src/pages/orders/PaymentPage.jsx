@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link, Navigate, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { fetchOrderById } from '../../api/orderApi'
-import { createPaymentIntent } from '../../api/paymentApi'
+import { createPaymentIntent, confirmMockPayment } from '../../api/paymentApi'
 
 function PaymentPage() {
   const { id } = useParams()
@@ -48,6 +48,25 @@ function PaymentPage() {
     } catch (err) {
       setPaymentError(err.response?.data?.message || 'Failed to create payment intent')
       setPaymentState('error')
+    }
+  }
+
+  const [simulating, setSimulating] = useState(false)
+
+  const handleSimulatePayment = async (status) => {
+    if (!paymentData?.paymentIntentId) return
+    setSimulating(true)
+    try {
+      await confirmMockPayment(paymentData.paymentIntentId, status)
+      if (status === 'success') {
+        navigate(`/payment/success?order=${order._id}`, { replace: true })
+      } else {
+        navigate(`/payment/failed?order=${order._id}`, { replace: true })
+      }
+    } catch (err) {
+      setPaymentError(err.response?.data?.message || 'Failed to process simulated payment')
+    } finally {
+      setSimulating(false)
     }
   }
 
@@ -644,7 +663,8 @@ function PaymentPage() {
                 {/* Navigation to result pages */}
                 <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
                   <button
-                    onClick={() => navigate(`/payment/success?order=${order._id}`)}
+                    onClick={() => handleSimulatePayment('success')}
+                    disabled={simulating}
                     style={{
                       flex: 1,
                       padding: '10px 16px',
@@ -654,16 +674,18 @@ function PaymentPage() {
                       background: 'rgba(52, 211, 153, 0.2)',
                       border: '1px solid rgba(52, 211, 153, 0.3)',
                       borderRadius: '8px',
-                      cursor: 'pointer',
+                      cursor: simulating ? 'not-allowed' : 'pointer',
                       transition: 'all 0.2s',
+                      opacity: simulating ? 0.6 : 1,
                     }}
-                    onMouseEnter={(e) => e.target.style.background = 'rgba(52, 211, 153, 0.3)'}
-                    onMouseLeave={(e) => e.target.style.background = 'rgba(52, 211, 153, 0.2)'}
+                    onMouseEnter={(e) => { if (!simulating) e.target.style.background = 'rgba(52, 211, 153, 0.3)' }}
+                    onMouseLeave={(e) => { if (!simulating) e.target.style.background = 'rgba(52, 211, 153, 0.2)' }}
                   >
-                    Simulate Success
+                    {simulating ? 'Simulating...' : 'Simulate Success'}
                   </button>
                   <button
-                    onClick={() => navigate(`/payment/failed?order=${order._id}`)}
+                    onClick={() => handleSimulatePayment('failed')}
+                    disabled={simulating}
                     style={{
                       flex: 1,
                       padding: '10px 16px',
@@ -673,13 +695,14 @@ function PaymentPage() {
                       background: 'rgba(239, 68, 68, 0.15)',
                       border: '1px solid rgba(239, 68, 68, 0.3)',
                       borderRadius: '8px',
-                      cursor: 'pointer',
+                      cursor: simulating ? 'not-allowed' : 'pointer',
                       transition: 'all 0.2s',
+                      opacity: simulating ? 0.6 : 1,
                     }}
-                    onMouseEnter={(e) => e.target.style.background = 'rgba(239, 68, 68, 0.25)'}
-                    onMouseLeave={(e) => e.target.style.background = 'rgba(239, 68, 68, 0.15)'}
+                    onMouseEnter={(e) => { if (!simulating) e.target.style.background = 'rgba(239, 68, 68, 0.25)' }}
+                    onMouseLeave={(e) => { if (!simulating) e.target.style.background = 'rgba(239, 68, 68, 0.15)' }}
                   >
-                    Simulate Failure
+                    {simulating ? 'Simulating...' : 'Simulate Failure'}
                   </button>
                 </div>
               </div>

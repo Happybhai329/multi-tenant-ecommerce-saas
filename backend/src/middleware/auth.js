@@ -139,6 +139,10 @@ const authorize = (...roles) => {
       return sendAuthError(res, 401, 'AUTH_TOKEN_MISSING', 'Authentication required. Please sign in.')
     }
 
+    if (req.user.status === 'suspended') {
+      return sendAuthError(res, 403, 'AUTH_ACCOUNT_SUSPENDED', 'Your account has been suspended. Please contact support.')
+    }
+
     if (!roles.includes(req.user.role)) {
       logger.event('auth.authorization.denied', {
         requestId: req.id,
