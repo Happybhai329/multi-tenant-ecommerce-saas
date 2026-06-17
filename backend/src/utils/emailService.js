@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import env from '../config/env.js'
 
 // Configure reusable transporter
 // We initialize lazily or fallback to Ethereal if no SMTP_HOST is provided
@@ -7,13 +8,13 @@ let transporter = null
 const createTransporter = async () => {
   if (transporter) return transporter
 
-  if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+  if (env.smtpHost && env.smtpUser) {
     transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT || 587,
+      host: env.smtpHost,
+      port: env.smtpPort,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: env.smtpUser,
+        pass: env.smtpPass,
       },
     })
   } else {
@@ -37,7 +38,7 @@ const createTransporter = async () => {
 const sendMail = async (options) => {
   try {
     const tp = await createTransporter()
-    const from = process.env.FROM_EMAIL || '"Multi-Tenant Ecom" <noreply@multitenantecom.com>'
+    const from = env.fromEmail
     
     const info = await tp.sendMail({
       from,
@@ -50,7 +51,7 @@ const sendMail = async (options) => {
     console.log(`✅ Email sent: ${info.messageId}`)
     
     // Log ethereal url if it's a test account
-    if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
+    if (!env.smtpHost || !env.smtpUser) {
       console.log(`📧 Preview URL: ${nodemailer.getTestMessageUrl(info)}`)
     }
 

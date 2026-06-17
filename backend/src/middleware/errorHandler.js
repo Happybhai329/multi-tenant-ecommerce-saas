@@ -1,4 +1,5 @@
 import logger from '../utils/logger.js'
+import env from '../config/env.js'
 
 export const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next)
@@ -74,7 +75,7 @@ export const errorHandler = (err, req, res, next) => {
     response.code = err.code
   }
 
-  if (process.env.NODE_ENV !== 'production') {
+  if (!env.isProduction) {
     response.stack = err.stack
   }
 

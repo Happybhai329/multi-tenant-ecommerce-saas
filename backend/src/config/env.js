@@ -23,6 +23,16 @@ const env = {
   appVersion: process.env.APP_VERSION || process.env.npm_package_version || '1.0.0',
   stripeSecretKey: process.env.STRIPE_SECRET_KEY,
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+  // Cloudinary keys
+  cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME,
+  cloudinaryApiKey: process.env.CLOUDINARY_API_KEY,
+  cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET,
+  // SMTP Email configurations
+  smtpHost: process.env.SMTP_HOST,
+  smtpPort: parseInt(process.env.SMTP_PORT || '587', 10),
+  smtpUser: process.env.SMTP_USER,
+  smtpPass: process.env.SMTP_PASS,
+  fromEmail: process.env.FROM_EMAIL || '"Multi-Tenant Ecom" <noreply@multitenantecom.com>',
 }
 
 const validateEnv = () => {
@@ -53,6 +63,16 @@ const validateEnv = () => {
 
   if (!env.stripeWebhookSecret) {
     warnings.push('STRIPE_WEBHOOK_SECRET is not configured; Stripe webhook verification will be unavailable')
+  }
+
+  // Cloudinary validation
+  if (!env.cloudinaryCloudName || !env.cloudinaryApiKey || !env.cloudinaryApiSecret) {
+    warnings.push('CLOUDINARY configuration (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) is incomplete; file uploads will fail.')
+  }
+
+  // SMTP validation
+  if (!env.smtpHost || !env.smtpUser || !env.smtpPass) {
+    warnings.push('SMTP configuration (SMTP_HOST, SMTP_USER, SMTP_PASS) is incomplete; email service will fall back to Ethereal test accounts.')
   }
 
   if (errors.length > 0) {
