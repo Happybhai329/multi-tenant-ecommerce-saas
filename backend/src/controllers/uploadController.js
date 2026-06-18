@@ -1,5 +1,6 @@
 import { uploadToCloudinary } from '../utils/upload.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
+import env from '../config/env.js'
 
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
@@ -11,6 +12,12 @@ const ALLOWED_MIME_TYPES = [
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
 const uploadImage = asyncHandler(async (req, res) => {
+  // Check Cloudinary configuration
+  if (!env.cloudinaryCloudName || !env.cloudinaryApiKey || !env.cloudinaryApiSecret) {
+    res.status(503)
+    throw new Error('Image upload service is not configured (missing Cloudinary credentials)')
+  }
+
   if (!req.file) {
     res.status(400)
     throw new Error('No image file provided')

@@ -8,8 +8,8 @@ function PublicLayout() {
       <main className="flex-1">
         <Outlet />
       </main>
-      <footer className="border-t border-gray-800 py-4 text-center text-xs text-gray-600">
-        © {new Date().getFullYear()} Multi-Tenant E-Commerce. All rights reserved.
+      <footer className="border-t border-gray-800 py-6 text-center text-xs text-gray-500">
+        © {new Date().getFullYear()} Zalima SaaS. All rights reserved. Built for scale.
       </footer>
     </div>
   )

@@ -11,6 +11,14 @@ const createRateLimiter = ({
   keyGenerator = defaultKeyGenerator,
 } = {}) => {
   return (req, res, next) => {
+    // Bypass rate limiting in test environment or with a valid bypass header
+    if (
+      process.env.NODE_ENV === 'test' ||
+      (process.env.RATE_LIMIT_BYPASS_KEY && req.headers['x-bypass-rate-limit'] === process.env.RATE_LIMIT_BYPASS_KEY)
+    ) {
+      return next()
+    }
+
     const now = Date.now()
     const key = keyGenerator(req)
     const bucket = buckets.get(key)

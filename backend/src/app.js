@@ -27,11 +27,21 @@ app.use(helmet())
 app.use(requestId)
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || env.clientUrls.includes(origin)) {
+    if (!origin) {
       return callback(null, true)
     }
 
-    const error = new Error('CORS policy does not allow this origin')
+    // Exact match in CLIENT_URLS
+    if (env.clientUrls.includes(origin)) {
+      return callback(null, true)
+    }
+
+    // Allow Vercel preview/deployment URLs (e.g., https://*.vercel.app)
+    if (/^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/.test(origin)) {
+      return callback(null, true)
+    }
+
+    const error = new Error(`CORS policy does not allow this origin: ${origin}`)
     error.statusCode = 403
     error.code = 'CORS_ORIGIN_DENIED'
     return callback(error)

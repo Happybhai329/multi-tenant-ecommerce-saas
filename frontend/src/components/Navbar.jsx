@@ -38,7 +38,7 @@ function Navbar() {
         {/* Left — Logo + Nav Links */}
         <div className="flex items-center gap-6">
           <Link to="/" className="text-lg font-bold tracking-tight text-white">
-            Multi-Tenant <span className="text-blue-500">Store</span>
+            Zalima<span className="text-blue-500">.</span>
           </Link>
 
           <div className="hidden sm:flex items-center gap-4">
