@@ -1,6 +1,6 @@
 import Order from '../models/Order.js'
 import Payment from '../models/Payment.js'
-import stripe from '../config/stripe.js'
+import stripe, { isMockStripeMode } from '../config/stripe.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
 import logger from '../utils/logger.js'
 
@@ -156,15 +156,35 @@ const getPaymentById = asyncHandler(async (req, res) => {
 const confirmMockPayment = asyncHandler(async (req, res) => {
   const { paymentIntentId, status } = req.body
 
+  if (!isMockStripeMode) {
+    logger.event('payment.mock.blocked', {
+      requestId: req.id,
+      userId: req.user._id,
+      reason: 'mock_mode_disabled',
+    })
+    res.status(403)
+    throw new Error('Mock payments are not enabled')
+  }
+
   if (!paymentIntentId) {
     res.status(400)
     throw new Error('Payment Intent ID is required')
+  }
+
+  if (!['success', 'failed'].includes(status)) {
+    res.status(400)
+    throw new Error('Mock payment status must be success or failed')
   }
 
   const payment = await Payment.findOne({ paymentIntentId })
   if (!payment) {
     res.status(404)
     throw new Error('Payment record not found')
+  }
+
+  if (payment.customer.toString() !== req.user._id.toString()) {
+    res.status(403)
+    throw new Error('Not authorized to confirm this payment')
   }
 
   if (status === 'success') {

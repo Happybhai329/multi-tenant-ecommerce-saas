@@ -1,28 +1,38 @@
+import { memo, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { addToCart } from '../features/cart/cartSlice'
 import { addToWishlist, removeFromWishlist, selectIsInWishlist } from '../features/wishlist/wishlistSlice'
 import { useToast } from './ToastContext'
 
+function ProductImagePlaceholder() {
+  return (
+    <svg className="w-12 h-12 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+        d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+    </svg>
+  )
+}
+
 function ProductCard({ product }) {
   const dispatch = useDispatch()
   const { showToast } = useToast()
+  const [failedImageUrl, setFailedImageUrl] = useState(null)
 
   const { token, user } = useSelector((state) => state.auth)
   const isCustomer = token && user?.role === 'customer'
   const inWishlist = useSelector((state) => selectIsInWishlist(state, product._id))
 
   // Find the primary image URL or fallback to the first image
-  const getProductImageUrl = () => {
+  const imageUrl = useMemo(() => {
     if (!product.images || product.images.length === 0) return null
     const primaryImg = product.images.find((img) => img && typeof img === 'object' && img.isPrimary)
     if (primaryImg && primaryImg.url) return primaryImg.url
     const firstImg = product.images[0]
     return firstImg && typeof firstImg === 'object' ? firstImg.url : firstImg
-  }
+  }, [product.images])
 
-  const imageUrl = getProductImageUrl()
-  const hasImage = !!imageUrl
+  const hasImage = !!imageUrl && failedImageUrl !== imageUrl
   const inStock = product.stock > 0
   const isLowStock = inStock && product.stock <= (product.lowStockThreshold || 5)
 
@@ -63,13 +73,13 @@ function ProductCard({ product }) {
           <img
             src={imageUrl}
             alt={product.title}
+            loading="lazy"
+            decoding="async"
+            onError={() => setFailedImageUrl(imageUrl)}
             className="w-full h-full object-cover"
           />
         ) : (
-          <svg className="w-12 h-12 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-              d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
-          </svg>
+          <ProductImagePlaceholder />
         )}
 
         {/* Wishlist Button */}
@@ -151,4 +161,4 @@ function ProductCard({ product }) {
   )
 }
 
-export default ProductCard
+export default memo(ProductCard)

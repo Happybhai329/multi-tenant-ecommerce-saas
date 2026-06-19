@@ -23,6 +23,7 @@ const env = {
   appVersion: process.env.APP_VERSION || process.env.npm_package_version || '1.0.0',
   stripeSecretKey: process.env.STRIPE_SECRET_KEY,
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+  paymentMockMode: process.env.PAYMENT_MOCK_MODE === 'true',
   // Cloudinary keys
   cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME,
   cloudinaryApiKey: process.env.CLOUDINARY_API_KEY,
@@ -57,7 +58,11 @@ const validateEnv = () => {
     warnings.push('CLIENT_URLS contains localhost while NODE_ENV=production')
   }
 
-  if (!env.stripeSecretKey) {
+  if (env.paymentMockMode) {
+    warnings.push('PAYMENT_MOCK_MODE is enabled; Stripe payment intents will be simulated')
+  }
+
+  if (!env.stripeSecretKey && !env.paymentMockMode && env.isProduction) {
     warnings.push('STRIPE_SECRET_KEY is not configured; payment intent creation will be unavailable')
   }
 

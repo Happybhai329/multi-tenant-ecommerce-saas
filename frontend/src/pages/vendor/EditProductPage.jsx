@@ -17,6 +17,49 @@ const CATEGORIES = [
   'Other',
 ]
 
+const getInitialForm = (product) => ({
+  title: product.title || '',
+  description: product.description || '',
+  category: product.category || '',
+  price: product.price?.toString() || '',
+  stock: product.stock?.toString() || '',
+  status: product.status || 'draft',
+})
+
+const getInitialImages = (product) => {
+  if (!product.images || product.images.length === 0) return []
+
+  return product.images
+    .filter((img) => img && (typeof img === 'object' ? img.url : img))
+    .map((img, index) => {
+      if (typeof img === 'object' && img.url) {
+        return {
+          url: img.url,
+          publicId: img.publicId || `legacy-${index}`,
+          isPrimary: img.isPrimary === true,
+        }
+      }
+
+      return {
+        url: img,
+        publicId: `legacy-${index}`,
+        isPrimary: index === 0,
+      }
+    })
+}
+
+function ProductLoadingState() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <svg className="animate-spin h-8 w-8 text-emerald-400" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+      </svg>
+      <span className="ml-3 text-gray-400">Loading product...</span>
+    </div>
+  )
+}
+
 function EditProductPage() {
   const { id } = useParams()
   const dispatch = useDispatch()
@@ -25,67 +68,12 @@ function EditProductPage() {
     (state) => state.products
   )
 
-  const [form, setForm] = useState({
-    title: '',
-    description: '',
-    category: '',
-    price: '',
-    stock: '',
-    status: 'draft',
-  })
-  const [images, setImages] = useState([])
-  const [validationErrors, setValidationErrors] = useState({})
-  const [initialized, setInitialized] = useState(false)
-
-  // Load products if not in state
   useEffect(() => {
     if (products.length === 0) {
       dispatch(getVendorProducts())
     }
   }, [dispatch, products.length])
 
-  // Initialize form with product data
-  useEffect(() => {
-    if (!initialized && products.length > 0) {
-      const product = products.find((p) => p._id === id)
-      if (product) {
-        setForm({
-          title: product.title || '',
-          description: product.description || '',
-          category: product.category || '',
-          price: product.price?.toString() || '',
-          stock: product.stock?.toString() || '',
-          status: product.status || 'draft',
-        })
-        // Initialize images from product — handle both old string format and new object format
-        if (product.images && product.images.length > 0) {
-          const mappedImages = product.images
-            .filter((img) => img && (typeof img === 'object' ? img.url : img))
-            .map((img, index) => {
-              if (typeof img === 'object' && img.url) {
-                return {
-                  url: img.url,
-                  publicId: img.publicId || `legacy-${index}`,
-                  isPrimary: img.isPrimary === true,
-                }
-              }
-              // Legacy string format — shouldn't happen after migration but handle gracefully
-              return {
-                url: img,
-                publicId: `legacy-${index}`,
-                isPrimary: index === 0,
-              }
-            })
-          setImages(mappedImages)
-        } else {
-          setImages([])
-        }
-        setInitialized(true)
-      }
-    }
-  }, [products, id, initialized])
-
-  // Redirect on success
   useEffect(() => {
     if (successMessage) {
       dispatch(clearSuccessMessage())
@@ -93,7 +81,6 @@ function EditProductPage() {
     }
   }, [successMessage, navigate, dispatch])
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       dispatch(clearProductError())
@@ -102,7 +89,6 @@ function EditProductPage() {
 
   const product = products.find((p) => p._id === id)
 
-  // Product not found
   if (!loading && products.length > 0 && !product) {
     return (
       <div className="max-w-2xl">
@@ -113,11 +99,25 @@ function EditProductPage() {
           onClick={() => navigate('/vendor/products')}
           className="mt-4 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium rounded-lg transition-colors cursor-pointer"
         >
-          ← Back to Products
+          Back to Products
         </button>
       </div>
     )
   }
+
+  if (!product) {
+    return <ProductLoadingState />
+  }
+
+  return <EditProductForm key={product._id} product={product} loading={loading} error={error} />
+}
+
+function EditProductForm({ product, loading, error }) {
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+  const [form, setForm] = useState(() => getInitialForm(product))
+  const [images, setImages] = useState(() => getInitialImages(product))
+  const [validationErrors, setValidationErrors] = useState({})
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -143,7 +143,7 @@ function EditProductPage() {
 
     dispatch(
       editProduct({
-        id,
+        id: product._id,
         data: {
           title: form.title.trim(),
           description: form.description.trim(),
@@ -157,22 +157,8 @@ function EditProductPage() {
     )
   }
 
-  // Loading state while fetching product
-  if (!initialized) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <svg className="animate-spin h-8 w-8 text-emerald-400" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-        </svg>
-        <span className="ml-3 text-gray-400">Loading product...</span>
-      </div>
-    )
-  }
-
   return (
     <div className="max-w-2xl">
-      {/* Page Header */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-white">Edit Product</h2>
         <p className="text-gray-400 text-sm mt-1">
@@ -180,16 +166,14 @@ function EditProductPage() {
         </p>
       </div>
 
-      {/* API Error */}
       {error && (
         <div className="mb-4 bg-red-900/30 border border-red-800/50 text-red-400 px-4 py-3 rounded-lg text-sm flex items-center justify-between">
           <span>{error}</span>
-          <button onClick={() => dispatch(clearProductError())} className="text-red-400 hover:text-red-300 cursor-pointer">✕</button>
+          <button onClick={() => dispatch(clearProductError())} className="text-red-400 hover:text-red-300 cursor-pointer">x</button>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5 bg-gray-900 border border-gray-800 rounded-xl p-6">
-        {/* Title */}
         <div>
           <label htmlFor="title" className="block text-sm font-medium text-gray-300 mb-1">
             Title <span className="text-red-400">*</span>
@@ -208,7 +192,6 @@ function EditProductPage() {
           {validationErrors.title && <p className="mt-1 text-xs text-red-500">{validationErrors.title}</p>}
         </div>
 
-        {/* Description */}
         <div>
           <label htmlFor="description" className="block text-sm font-medium text-gray-300 mb-1">
             Description
@@ -224,7 +207,6 @@ function EditProductPage() {
           />
         </div>
 
-        {/* Category */}
         <div>
           <label htmlFor="category" className="block text-sm font-medium text-gray-300 mb-1">
             Category <span className="text-red-400">*</span>
@@ -246,7 +228,6 @@ function EditProductPage() {
           {validationErrors.category && <p className="mt-1 text-xs text-red-500">{validationErrors.category}</p>}
         </div>
 
-        {/* Price & Stock */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label htmlFor="price" className="block text-sm font-medium text-gray-300 mb-1">
@@ -287,7 +268,6 @@ function EditProductPage() {
           </div>
         </div>
 
-        {/* Status */}
         <div>
           <label htmlFor="status" className="block text-sm font-medium text-gray-300 mb-1">
             Status
@@ -304,17 +284,22 @@ function EditProductPage() {
           </select>
         </div>
 
-        {/* Image Upload */}
         <ImageUploader images={images} onChange={setImages} />
 
-        {/* Submit Buttons */}
         <div className="flex items-center gap-3 pt-4 border-t border-gray-800">
           <button
             type="submit"
             disabled={loading}
             className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
-            {loading ? 'Saving...' : 'Save Changes'}
+            {loading ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="h-4 w-4 rounded-full border-2 border-emerald-200/50 border-t-white animate-spin" />
+                Saving...
+              </span>
+            ) : (
+              'Save Changes'
+            )}
           </button>
           <button
             type="button"

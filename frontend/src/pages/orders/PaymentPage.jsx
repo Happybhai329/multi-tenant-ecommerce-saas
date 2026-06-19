@@ -6,7 +6,7 @@ import { createPaymentIntent, confirmMockPayment } from '../../api/paymentApi'
 
 function PaymentPage() {
   const { id } = useParams()
-  const { token, user } = useSelector((state) => state.auth)
+  const { token } = useSelector((state) => state.auth)
   const navigate = useNavigate()
 
   const [order, setOrder] = useState(null)
@@ -17,13 +17,11 @@ function PaymentPage() {
   const [paymentState, setPaymentState] = useState('idle') // idle | creating | success | error
   const [paymentData, setPaymentData] = useState(null)
   const [paymentError, setPaymentError] = useState(null)
-
-  // Redirect if not authenticated
-  if (!token) {
-    return <Navigate to="/login" replace />
-  }
+  const [simulating, setSimulating] = useState(false)
 
   useEffect(() => {
+    if (!token) return
+
     const loadOrder = async () => {
       try {
         setLoading(true)
@@ -36,7 +34,12 @@ function PaymentPage() {
       }
     }
     loadOrder()
-  }, [id])
+  }, [id, token])
+
+  // Redirect if not authenticated
+  if (!token) {
+    return <Navigate to="/login" replace />
+  }
 
   const handleCreatePaymentIntent = async () => {
     setPaymentState('creating')
@@ -50,8 +53,6 @@ function PaymentPage() {
       setPaymentState('error')
     }
   }
-
-  const [simulating, setSimulating] = useState(false)
 
   const handleSimulatePayment = async (status) => {
     if (!paymentData?.paymentIntentId) return
@@ -479,9 +480,22 @@ function PaymentPage() {
           font-size: 13px;
           color: #d1d5db;
           font-family: 'SF Mono', 'Fira Code', monospace;
+          text-align: right;
+          overflow-wrap: anywhere;
+          max-width: 58%;
         }
 
         /* ─── Error Message ─── */
+        .payment-sim-actions {
+          margin-top: 20px;
+          display: flex;
+          gap: 10px;
+        }
+        @media (max-width: 420px) {
+          .payment-sim-actions {
+            flex-direction: column;
+          }
+        }
         .payment-error-msg {
           background: rgba(239, 68, 68, 0.08);
           border: 1px solid rgba(239, 68, 68, 0.25);
@@ -635,9 +649,9 @@ function PaymentPage() {
                     <polyline points="20 6 9 17 4 12"/>
                   </svg>
                 </div>
-                <div className="payment-success-title">Payment Intent Created</div>
+                <div className="payment-success-title">Demo Payment Ready</div>
                 <div className="payment-success-subtitle">
-                  Card payment UI coming soon — intent is ready for processing
+                  Choose a demo outcome to complete the checkout flow.
                 </div>
                 <div>
                   <div className="payment-detail-row">
@@ -661,7 +675,7 @@ function PaymentPage() {
                 </div>
 
                 {/* Navigation to result pages */}
-                <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+                <div className="payment-sim-actions">
                   <button
                     onClick={() => handleSimulatePayment('success')}
                     disabled={simulating}
@@ -681,7 +695,7 @@ function PaymentPage() {
                     onMouseEnter={(e) => { if (!simulating) e.target.style.background = 'rgba(52, 211, 153, 0.3)' }}
                     onMouseLeave={(e) => { if (!simulating) e.target.style.background = 'rgba(52, 211, 153, 0.2)' }}
                   >
-                    {simulating ? 'Simulating...' : 'Simulate Success'}
+                    {simulating ? 'Processing...' : 'Mark as Paid'}
                   </button>
                   <button
                     onClick={() => handleSimulatePayment('failed')}
@@ -702,7 +716,7 @@ function PaymentPage() {
                     onMouseEnter={(e) => { if (!simulating) e.target.style.background = 'rgba(239, 68, 68, 0.25)' }}
                     onMouseLeave={(e) => { if (!simulating) e.target.style.background = 'rgba(239, 68, 68, 0.15)' }}
                   >
-                    {simulating ? 'Simulating...' : 'Simulate Failure'}
+                    {simulating ? 'Processing...' : 'Mark as Failed'}
                   </button>
                 </div>
               </div>
@@ -719,9 +733,9 @@ function PaymentPage() {
                     </svg>
                   </div>
                   <div className="payment-card-text">
-                    <strong>Stripe card element will be integrated here</strong>
+                    <strong>Demo checkout session</strong>
                     <br />
-                    Create a payment intent first to prepare the checkout
+                    Create a mock payment intent to test checkout safely.
                   </div>
                 </div>
 
@@ -751,7 +765,7 @@ function PaymentPage() {
                       borderRadius: '50%',
                       animation: 'paymentSpin 0.7s linear infinite'
                     }} />
-                    Creating Payment Intent…
+                    Preparing Demo Payment...
                   </>
                 ) : paymentState === 'error' ? (
                   <>
@@ -759,7 +773,7 @@ function PaymentPage() {
                       <polyline points="23 4 23 10 17 10"/>
                       <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
                     </svg>
-                    Retry Payment Intent
+                    Retry Demo Payment
                   </>
                 ) : (
                   <>
@@ -767,7 +781,7 @@ function PaymentPage() {
                       <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
                       <line x1="1" y1="10" x2="23" y2="10"/>
                     </svg>
-                    Create Payment Intent
+                    Create Demo Payment
                   </>
                 )}
               </button>

@@ -228,7 +228,14 @@ function AddProductPage() {
             disabled={loading}
             className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
-            {loading ? 'Creating...' : 'Create Product'}
+            {loading ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="h-4 w-4 rounded-full border-2 border-emerald-200/50 border-t-white animate-spin" />
+                Creating...
+              </span>
+            ) : (
+              'Create Product'
+            )}
           </button>
           <button
             type="button"

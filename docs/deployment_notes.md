@@ -25,6 +25,7 @@ This document summarizes the configurations and environment variables required t
 | `CLIENT_URLS` | Required | Deployed frontend URL(s), comma-separated. E.g.: `https://zalima-ecommerce.vercel.app` |
 | `RATE_LIMIT_BYPASS_KEY` | Optional | Secret key to bypass register rate limiting for smoke test runs |
 | `STRIPE_SECRET_KEY` | Optional | Stripe secret key (`sk_test_...` enables Mock Stripe Mode automatically if used) |
+| `PAYMENT_MOCK_MODE` | Optional | Set to `true` for offline demo checkout without contacting Stripe. Do not enable for live payment testing. |
 | `STRIPE_WEBHOOK_SECRET` | Optional | Stripe webhook signature key |
 | `CLOUDINARY_CLOUD_NAME`| Optional | Cloudinary cloud name (required for image upload success) |
 | `CLOUDINARY_API_KEY` | Optional | Cloudinary API Key |

@@ -150,7 +150,7 @@ function CheckoutPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label htmlFor="checkout-city" className="block text-sm text-gray-400 mb-1">City</label>
                   <input
@@ -177,7 +177,7 @@ function CheckoutPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label htmlFor="checkout-zipCode" className="block text-sm text-gray-400 mb-1">ZIP Code</label>
                   <input
@@ -205,16 +205,18 @@ function CheckoutPage() {
               </div>
             </div>
 
-            {/* Payment placeholder notice */}
+            {/* Payment notice */}
             <div className="mt-6 p-4 bg-gray-900 border border-gray-800 rounded-lg">
               <div className="flex items-start gap-3">
-                <span className="text-yellow-500 text-lg">⚠</span>
+                <svg className="w-5 h-5 mt-0.5 shrink-0 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5m-18 3.75h16.5m-15 6h13.5A2.25 2.25 0 0021 15.75v-7.5A2.25 2.25 0 0018.75 6H5.25A2.25 2.25 0 003 8.25v7.5A2.25 2.25 0 005.25 18z" />
+                </svg>
                 <div>
                   <p className="text-sm font-medium text-gray-300">
-                    Payment integration coming soon
+                    Demo payment is available after order placement
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    Orders will be created with a "pending" payment status. Payment processing will be added in a future update.
+                    The next step creates a mock payment intent for safe checkout testing.
                   </p>
                 </div>
               </div>
@@ -293,7 +295,14 @@ function CheckoutPage() {
                     : 'bg-blue-600 hover:bg-blue-700 text-white'
                 }`}
               >
-                {submitting ? 'Placing Order...' : 'Place Order'}
+                {submitting ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <span className="h-4 w-4 rounded-full border-2 border-gray-400 border-t-white animate-spin" />
+                    Placing Order...
+                  </span>
+                ) : (
+                  'Place Order'
+                )}
               </button>
 
               <Link
