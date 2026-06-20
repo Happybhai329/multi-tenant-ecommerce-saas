@@ -10,6 +10,7 @@
     "test": "node tests/store.test.js",
     "smoke-test": "node tests/smoke.test.js",
     "db:seed": "node seed.js",
+    "db:reset": "node reset-db.js",
     "seed": "node seed.js"
   },
   "keywords": [],
