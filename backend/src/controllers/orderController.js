@@ -19,6 +19,10 @@ const createOrder = asyncHandler(async (req, res) => {
     throw new Error('One or more products not found')
   }
 
+  const storeIds = [...new Set(products.map((product) => product.store.toString()))]
+  const activeStores = await Store.find({ _id: { $in: storeIds }, status: 'active' }).select('_id')
+  const activeStoreIds = new Set(activeStores.map((store) => store._id.toString()))
+
   const productMap = new Map()
   for (const product of products) {
     productMap.set(product._id.toString(), product)
@@ -32,6 +36,10 @@ const createOrder = asyncHandler(async (req, res) => {
       throw new Error(`Product ${item.product} not found`)
     }
     if (product.status !== 'published') {
+      res.status(400)
+      throw new Error(`"${product.title}" is not available for purchase`)
+    }
+    if (!activeStoreIds.has(product.store.toString())) {
       res.status(400)
       throw new Error(`"${product.title}" is not available for purchase`)
     }

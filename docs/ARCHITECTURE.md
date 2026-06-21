@@ -33,34 +33,35 @@ The platform follows a classic three-tier architecture:
 frontend/src/
 ├── api/                    # API service layer
 │   ├── axios.js           # Axios instance with interceptors
-│   ├── authApi.js         # Authentication endpoints
 │   ├── storeApi.js        # Store endpoints
 │   ├── productApi.js      # Product endpoints
 │   ├── orderApi.js        # Order endpoints
+│   ├── paymentApi.js      # Payment endpoints
+│   ├── wishlistApi.js     # Wishlist endpoints
+│   ├── adminApi.js        # Admin endpoints
 │   └── ...
 ├── components/            # Reusable UI components
-│   ├── common/           # Button, Input, Modal, etc.
-│   ├── layout/           # Header, Footer, Sidebar
+│   ├── admin/            # Admin layout/sidebar components
+│   ├── cart/             # Cart row components
+│   ├── search/           # Search/filter/pagination controls
+│   ├── storefront/       # Product review components
+│   ├── vendor/           # Vendor dashboard components
 │   └── ...
 ├── features/              # Redux slices
-│   ├── authSlice.js      # Auth state management
-│   ├── cartSlice.js      # Shopping cart
+│   ├── auth/             # Auth state
+│   ├── cart/             # Shopping cart state
+│   ├── products/         # Vendor product state
+│   ├── wishlist/         # Wishlist state
 │   └── ...
 ├── pages/                 # Page components
-│   ├── customer/         # Customer-facing pages
-│   │   ├── HomePage.jsx
-│   │   ├── ProductPage.jsx
-│   │   ├── CartPage.jsx
-│   │   └── CheckoutPage.jsx
+│   ├── Home.jsx
+│   ├── Login.jsx
+│   ├── Register.jsx
+│   ├── cart/             # Cart and checkout
+│   ├── orders/           # Customer order and payment pages
+│   ├── storefront/       # Store/product/wishlist pages
 │   ├── vendor/           # Vendor dashboard pages
-│   │   ├── VendorDashboard.jsx
-│   │   ├── ProductsPage.jsx
-│   │   └── AnalyticsPage.jsx
-│   ├── admin/            # Admin dashboard pages
-│   │   └── AdminDashboard.jsx
-│   └── auth/             # Auth pages
-│       ├── LoginPage.jsx
-│       └── RegisterPage.jsx
+│   └── admin/            # Admin moderation pages
 ├── router/                # Route configuration
 │   └── AppRouter.jsx     # React Router setup
 ├── App.jsx               # Root component
@@ -97,13 +98,17 @@ frontend/src/
 ```
 backend/src/
 ├── config/                # Configuration files
-│   └── env.js            # Environment variables
+│   ├── env.js            # Environment variables
+│   ├── db.js             # MongoDB connection
+│   ├── stripe.js         # Stripe client or mock mode
+│   └── cloudinary.js     # Cloudinary client
 ├── controllers/           # Route handlers (business logic)
-│   ├── authController.js
 │   ├── storeController.js
 │   ├── productController.js
 │   ├── orderController.js
 │   ├── paymentController.js
+│   ├── reviewController.js
+│   ├── wishlistController.js
 │   └── adminController.js
 ├── middleware/            # Express middleware
 │   ├── auth.js           # JWT authentication
@@ -246,6 +251,7 @@ backend/src/
 
 ```javascript
 {
+  orderNumber: String (unique),
   customer: ObjectId (ref: User, required),
   store: ObjectId (ref: Store, required),
   items: [{
@@ -265,7 +271,7 @@ backend/src/
     zipCode: String,
     phone: String
   },
-  paymentStatus: Enum ['pending', 'paid', 'failed'],
+  paymentStatus: Enum ['pending', 'paid'],
   orderStatus: Enum ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
   payment: ObjectId (ref: Payment),
   createdAt: Date,
@@ -283,7 +289,7 @@ backend/src/
 
 ```javascript
 {
-  order: ObjectId (ref: Product, required),
+  order: ObjectId (ref: Order, required),
   customer: ObjectId (ref: User, required),
   amount: Number (required, in cents),
   currency: String (default: 'usd'),
@@ -406,9 +412,7 @@ backend/src/
 
 ```javascript
 {
-  userId: ObjectId,
-  email: String,
-  role: String,
+  id: ObjectId,
   iat: Number (issued at),
   exp: Number (expiration)
 }
@@ -440,7 +444,7 @@ The platform uses a **shared database, shared schema** multi-tenancy approach wi
 ### Data Access Patterns
 
 **Customer Access:**
-- Can view all published products across all stores
+- Can view published products from active stores
 - Can only access their own orders, wishlist, reviews
 - Cannot access vendor or admin endpoints
 
@@ -460,10 +464,8 @@ The platform uses a **shared database, shared schema** multi-tenancy approach wi
 **Query Scoping:**
 ```javascript
 // Vendor can only see their products
-const products = await Product.find({ 
-  store: vendor.storeId,
-  createdBy: vendor.userId 
-})
+const store = await Store.findOne({ owner: req.user._id })
+const products = await Product.find({ store: store._id })
 
 // Customer can only see their orders
 const orders = await Order.find({ 
@@ -476,7 +478,8 @@ const orders = await Order.find({
 // Ownership middleware
 const verifyProductOwner = async (req, res, next) => {
   const product = await Product.findById(req.params.id)
-  if (product.createdBy.toString() !== req.user._id.toString()) {
+  const store = await Store.findById(product.store)
+  if (store.owner.toString() !== req.user._id.toString()) {
     return res.status(403).json({ message: 'Not authorized' })
   }
   next()
@@ -499,9 +502,9 @@ const verifyProductOwner = async (req, res, next) => {
 ### API Security
 - CORS configured for specific origins
 - Helmet.js for security headers
-- Request validation with Joi
-- SQL injection prevention (NoSQL injection checks)
-- XSS protection (input sanitization)
+- Custom request validation middleware
+- Mongoose casting and schema validation
+- Search regex escaping on public product queries
 
 ### Data Security
 - Environment variables for secrets

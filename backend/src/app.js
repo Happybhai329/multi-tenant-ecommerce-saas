@@ -7,7 +7,6 @@ import { notFound, errorHandler } from './middleware/errorHandler.js'
 import { requestId, requestLogger } from './middleware/requestLogger.js'
 import authRoutes from './routes/authRoutes.js'
 import healthRoutes from './routes/healthRoutes.js'
-import testRoutes from './routes/testRoutes.js'
 import storeRoutes from './routes/storeRoutes.js'
 import productRoutes from './routes/productRoutes.js'
 import orderRoutes from './routes/orderRoutes.js'
@@ -73,7 +72,6 @@ app.get('/', (req, res) => {
 
 app.use('/api', healthRoutes)
 app.use('/api/auth', authRoutes)
-app.use('/api/test', testRoutes)
 app.use('/api/stores', storeRoutes)
 app.use('/api/products', productRoutes)
 app.use('/api/orders', orderRoutes)

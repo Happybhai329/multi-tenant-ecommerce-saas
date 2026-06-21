@@ -229,6 +229,10 @@ See `docs/API_DOCUMENTATION.md` for detailed API endpoint documentation with sam
 
 See `docs/ARCHITECTURE.md` for detailed architecture documentation including database models, authentication flow, and tenant isolation approach.
 
+## Final Handoff
+
+See `docs/HANDOFF_NOTES.md` for known limitations, deployment considerations, maintenance notes, and the final verification checklist.
+
 ## Future Improvements
 
 - Real-time notifications with WebSocket

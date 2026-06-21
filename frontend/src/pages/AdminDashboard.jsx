@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { getAdminDashboard } from '../api/adminApi'
-import { Link } from 'react-router-dom'
 
 function AdminDashboard() {
   const [stats, setStats] = useState(null)

@@ -2,6 +2,8 @@ import Product from '../models/Product.js'
 import Store from '../models/Store.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
 
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 // POST /api/products — Create a new product (vendor only)
 const createProduct = asyncHandler(async (req, res) => {
   const store = await Store.findOne({ owner: req.user._id })
@@ -56,6 +58,17 @@ const getProducts = asyncHandler(async (req, res) => {
   const filter = {}
   const isVendor = req.user?.role === 'vendor'
   const isAdmin = req.user?.role === 'admin'
+  const page = Math.max(1, parseInt(req.query.page) || 1)
+  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 12))
+  const skip = (page - 1) * limit
+
+  const emptyProductList = () => ({
+    success: true,
+    data: {
+      products: [],
+      pagination: { page, limit, total: 0, pages: 0 },
+    },
+  })
 
   // --- Access control and Store Status Filter ---
   if (isAdmin) {
@@ -67,13 +80,7 @@ const getProducts = asyncHandler(async (req, res) => {
       filter.store = store._id
       if (req.query.status) filter.status = req.query.status
     } else {
-      return res.json({
-        success: true,
-        data: {
-          products: [],
-          pagination: { page: 1, limit: 12, total: 0, pages: 0 },
-        },
-      })
+      return res.json(emptyProductList())
     }
   } else {
     filter.status = 'published'
@@ -84,18 +91,7 @@ const getProducts = asyncHandler(async (req, res) => {
 
     if (req.query.store) {
       if (!activeStoreIds.map((id) => id.toString()).includes(req.query.store.toString())) {
-        return res.json({
-          success: true,
-          data: {
-            products: [],
-            pagination: {
-              page: Math.max(1, parseInt(req.query.page) || 1),
-              limit: Math.min(50, Math.max(1, parseInt(req.query.limit) || 12)),
-              total: 0,
-              pages: 0,
-            },
-          },
-        })
+        return res.json(emptyProductList())
       }
       filter.store = req.query.store
     } else {
@@ -106,7 +102,7 @@ const getProducts = asyncHandler(async (req, res) => {
   // --- Search (text search with regex fallback) ---
   if (req.query.search && req.query.search.trim()) {
     const searchTerm = req.query.search.trim()
-    const regex = new RegExp(searchTerm, 'i')
+    const regex = new RegExp(escapeRegex(searchTerm), 'i')
     filter.$or = [
       { title: regex },
       { description: regex },
@@ -116,13 +112,8 @@ const getProducts = asyncHandler(async (req, res) => {
 
   // --- Category filter (case-insensitive exact match) ---
   if (req.query.category && req.query.category.trim()) {
-    const catRegex = new RegExp(`^${req.query.category.trim()}$`, 'i')
+    const catRegex = new RegExp(`^${escapeRegex(req.query.category.trim())}$`, 'i')
     filter.category = catRegex
-  }
-
-  // --- Store filter ---
-  if (req.query.store) {
-    filter.store = req.query.store
   }
 
   // --- Price range ---
@@ -148,11 +139,6 @@ const getProducts = asyncHandler(async (req, res) => {
       sortOption = '-averageRating -reviewCount'
       break
   }
-
-  // --- Pagination ---
-  const page = Math.max(1, parseInt(req.query.page) || 1)
-  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 12))
-  const skip = (page - 1) * limit
 
   // Execute count + query in parallel
   const [total, products] = await Promise.all([
@@ -183,9 +169,24 @@ const getProducts = asyncHandler(async (req, res) => {
 // GET /api/products/categories — Fetch distinct categories
 const getCategories = asyncHandler(async (req, res) => {
   const filter = { status: 'published' }
+  const activeStores = await Store.find({ status: 'active' }).select('_id')
+  const activeStoreIds = activeStores.map((store) => store._id)
 
   if (req.query.store) {
+    const isActiveStore = activeStoreIds
+      .map((id) => id.toString())
+      .includes(req.query.store.toString())
+
+    if (!isActiveStore) {
+      return res.json({
+        success: true,
+        data: { categories: [] },
+      })
+    }
+
     filter.store = req.query.store
+  } else {
+    filter.store = { $in: activeStoreIds }
   }
 
   const categories = await Product.distinct('category', filter)
@@ -200,7 +201,7 @@ const getCategories = asyncHandler(async (req, res) => {
 // GET /api/products/:slug — Fetch a single product by slug (public)
 const getProductBySlug = asyncHandler(async (req, res) => {
   const product = await Product.findOne({ slug: req.params.slug })
-    .populate('store', 'name slug')
+    .populate('store', 'name slug status')
     .populate('createdBy', 'name')
 
   if (!product) {
@@ -210,8 +211,9 @@ const getProductBySlug = asyncHandler(async (req, res) => {
 
   const isOwner = req.user && product.createdBy._id.toString() === req.user._id.toString()
   const isAdmin = req.user?.role === 'admin'
+  const isPubliclyVisible = product.status === 'published' && product.store?.status === 'active'
 
-  if (product.status !== 'published' && !isOwner && !isAdmin) {
+  if (!isPubliclyVisible && !isOwner && !isAdmin) {
     res.status(404)
     throw new Error('Product not found')
   }

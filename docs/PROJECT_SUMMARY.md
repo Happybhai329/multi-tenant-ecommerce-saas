@@ -231,6 +231,7 @@ multi-tenant-ecommerce/
 │   ├── ENVIRONMENT_SETUP.md           # Service setup guide
 │   ├── ARCHITECTURE.md               # System architecture
 │   ├── DEMO_SCRIPT.md                # Presentation script
+│   ├── HANDOFF_NOTES.md              # Final limitations and checklist
 │   ├── deployment_guide.md           # Existing deployment guide
 │   └── deployment_notes.md           # Existing deployment notes
 ├── backend/

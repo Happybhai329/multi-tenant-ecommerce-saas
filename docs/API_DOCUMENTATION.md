@@ -1,935 +1,206 @@
 # API Documentation
 
-Base URL: `http://localhost:5000/api`
+Base URL: `http://localhost:5000/api` locally. In production, use the deployed backend origin plus `/api`.
 
-All endpoints return JSON responses. Authentication required endpoints use JWT tokens in the Authorization header.
+Protected endpoints require:
+
+```http
+Authorization: Bearer <jwt>
+```
+
+Most success responses use this envelope:
+
+```json
+{
+  "success": true,
+  "data": {}
+}
+```
+
+Errors use:
+
+```json
+{
+  "success": false,
+  "message": "Human-readable error",
+  "code": "OPTIONAL_MACHINE_CODE"
+}
+```
+
+## Health
+
+| Method | Path | Access | Purpose |
+| --- | --- | --- | --- |
+| GET | `/health` | Public | Basic API and database health check |
+| GET | `/status` | Public | Health payload plus runtime memory details |
 
 ## Authentication
 
-### Register User
-**POST** `/api/auth/register`
+| Method | Path | Access | Purpose |
+| --- | --- | --- | --- |
+| POST | `/auth/register` | Public | Register a `customer` or `vendor`; direct `admin` registration is blocked |
+| POST | `/auth/login` | Public | Login and receive `{ user, token }` |
+| GET | `/auth/me` | Authenticated | Return the current authenticated user |
 
-Register a new user (customer or vendor). Admin registration is blocked.
+Registration body:
 
-**Request Body:**
 ```json
 {
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "securePassword123",
+  "name": "Customer User",
+  "email": "customer@example.com",
+  "password": "Password123!",
   "role": "customer"
-}
-```
-
-**Response (201):**
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
-      "name": "John Doe",
-      "email": "john@example.com",
-      "role": "customer",
-      "status": "active"
-    },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
-}
-```
-
-**Error Response (400):**
-```json
-{
-  "success": false,
-  "message": "Email already registered"
-}
-```
-
-### Login User
-**POST** `/api/auth/login`
-
-Authenticate user and receive JWT token.
-
-**Request Body:**
-```json
-{
-  "email": "john@example.com",
-  "password": "securePassword123"
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
-      "name": "John Doe",
-      "email": "john@example.com",
-      "role": "customer",
-      "status": "active"
-    },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
-}
-```
-
-**Error Response (401):**
-```json
-{
-  "success": false,
-  "message": "Invalid email or password"
-}
-```
-
-### Get Current User
-**GET** `/api/auth/me`
-
-Get currently authenticated user details.
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
-      "name": "John Doe",
-      "email": "john@example.com",
-      "role": "customer",
-      "status": "active",
-      "createdAt": "2024-01-15T10:30:00.000Z"
-    }
-  }
 }
 ```
 
 ## Stores
 
-### Get All Stores
-**GET** `/api/stores`
+| Method | Path | Access | Purpose |
+| --- | --- | --- | --- |
+| GET | `/stores` | Public | List active stores with pagination |
+| GET | `/stores/:slug` | Public | Fetch one active public store |
+| POST | `/stores` | Vendor | Create the vendor's single store |
+| GET | `/stores/my-store` | Vendor | Fetch the vendor's own store |
+| PATCH | `/stores/my-store` | Vendor | Update the vendor's own store |
 
-Retrieve all active stores.
+List responses return:
 
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "_id": "64f1a2b3c4d5e6f7a8b9c0d2",
-      "name": "Apex Tech Store",
-      "description": "Electronics and desk gear",
-      "logo": "https://example.com/logo.jpg",
-      "banner": "https://example.com/banner.jpg",
-      "slug": "apex-tech-store",
-      "owner": {
-        "_id": "64f1a2b3c4d5e6f7a8b9c0d3",
-        "name": "Maya Chen"
-      },
-      "status": "active"
-    }
-  ]
-}
-```
-
-### Get Store by Slug
-**GET** `/api/stores/:slug`
-
-Retrieve a specific store by its slug.
-
-**Response (200):**
 ```json
 {
   "success": true,
   "data": {
-    "_id": "64f1a2b3c4d5e6f7a8b9c0d2",
-    "name": "Apex Tech Store",
-    "description": "Electronics and desk gear",
-    "logo": "https://example.com/logo.jpg",
-    "banner": "https://example.com/banner.jpg",
-    "slug": "apex-tech-store",
-    "owner": {
-      "_id": "64f1a2b3c4d5e6f7a8b9c0d3",
-      "name": "Maya Chen"
-    },
-    "status": "active"
-  }
-}
-```
-
-### Create Store
-**POST** `/api/stores`
-
-Create a new store (vendor only).
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Request Body:**
-```json
-{
-  "name": "My Store",
-  "description": "A great store",
-  "logo": "https://example.com/logo.jpg",
-  "banner": "https://example.com/banner.jpg"
-}
-```
-
-**Response (201):**
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "64f1a2b3c4d5e6f7a8b9c0d4",
-    "name": "My Store",
-    "description": "A great store",
-    "logo": "https://example.com/logo.jpg",
-    "banner": "https://example.com/banner.jpg",
-    "slug": "my-store",
-    "owner": "64f1a2b3c4d5e6f7a8b9c0d3",
-    "status": "active"
-  }
-}
-```
-
-### Get My Store
-**GET** `/api/stores/my-store`
-
-Get the authenticated vendor's store.
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "64f1a2b3c4d5e6f7a8b9c0d4",
-    "name": "My Store",
-    "description": "A great store",
-    "logo": "https://example.com/logo.jpg",
-    "banner": "https://example.com/banner.jpg",
-    "slug": "my-store",
-    "owner": "64f1a2b3c4d5e6f7a8b9c0d3",
-    "status": "active"
-  }
-}
-```
-
-### Update My Store
-**PATCH** `/api/stores/my-store`
-
-Update the authenticated vendor's store.
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Request Body:**
-```json
-{
-  "name": "Updated Store Name",
-  "description": "Updated description"
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "64f1a2b3c4d5e6f7a8b9c0d4",
-    "name": "Updated Store Name",
-    "description": "Updated description",
-    "logo": "https://example.com/logo.jpg",
-    "banner": "https://example.com/banner.jpg",
-    "slug": "updated-store-name",
-    "owner": "64f1a2b3c4d5e6f7a8b9c0d3",
-    "status": "active"
+    "stores": [],
+    "pagination": { "page": 1, "limit": 12, "total": 0, "pages": 0 }
   }
 }
 ```
 
 ## Products
 
-### Get Products
-**GET** `/api/products`
+| Method | Path | Access | Purpose |
+| --- | --- | --- | --- |
+| GET | `/products` | Public, optional auth | Browse/search products |
+| GET | `/products/categories` | Public | List categories for active stores |
+| GET | `/products/:slug` | Public, optional auth | Fetch a product detail by slug |
+| POST | `/products` | Vendor | Create a product in the vendor's store |
+| PATCH | `/products/:id` | Owning vendor | Update a product |
+| PATCH | `/products/:id/stock` | Owning vendor | Update inventory count |
+| DELETE | `/products/:id` | Owning vendor | Delete a product |
 
-Retrieve all products with optional filtering.
+Supported browse query parameters:
 
-**Query Parameters:**
-- `category`: Filter by category
-- `store`: Filter by store ID
-- `search`: Search in title and description
-- `page`: Page number (default: 1)
-- `limit`: Items per page (default: 10)
+| Parameter | Notes |
+| --- | --- |
+| `search` | Case-insensitive search across title, description, and category |
+| `category` | Case-insensitive exact category match |
+| `store` | Store ObjectId; public results only include active stores |
+| `minPrice`, `maxPrice` | Numeric price range |
+| `sort` | `price_asc`, `price_desc`, `newest`, or `rating` |
+| `page`, `limit` | Pagination; `limit` is capped at 50 |
+| `mine=true` | Vendor-only view of the authenticated vendor's products |
+| `status` | Vendor/admin product status filter |
 
-**Example:** `/api/products?category=Electronics&page=1&limit=10`
+Public product responses only include published products from active stores. Vendor product management is scoped to the authenticated vendor's own store.
 
-**Response (200):**
+## Wishlist
+
+| Method | Path | Access | Purpose |
+| --- | --- | --- | --- |
+| GET | `/wishlist` | Customer | Fetch the customer's wishlist |
+| POST | `/wishlist/:productId` | Customer | Add a published product from an active store |
+| DELETE | `/wishlist/:productId` | Customer | Remove a product from wishlist |
+
+Wishlist responses return a wishlist object with a `products` array. Hidden, deleted, draft, or suspended-store products are filtered out of the response.
+
+## Reviews
+
+| Method | Path | Access | Purpose |
+| --- | --- | --- | --- |
+| GET | `/reviews/product/:productId` | Public | Fetch reviews for a visible product |
+| POST | `/reviews` | Customer | Create one review per customer per visible product |
+| DELETE | `/reviews/:id` | Review owner or admin | Delete a review |
+
+Create body:
+
 ```json
 {
-  "success": true,
-  "data": [
-    {
-      "_id": "64f1a2b3c4d5e6f7a8b9c0d5",
-      "title": "UltraWireless Pro Earbuds",
-      "description": "Active noise cancellation...",
-      "price": 89.99,
-      "comparePrice": 109.99,
-      "category": "Electronics",
-      "stock": 20,
-      "status": "published",
-      "slug": "ultrawireless-pro-earbuds",
-      "images": [
-        {
-          "url": "https://example.com/image.jpg",
-          "publicId": "image_id",
-          "isPrimary": true
-        }
-      ],
-      "store": {
-        "_id": "64f1a2b3c4d5e6f7a8b9c0d2",
-        "name": "Apex Tech Store",
-        "slug": "apex-tech-store"
-      },
-      "averageRating": 4.5,
-      "reviewCount": 2
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "total": 50,
-    "pages": 5
-  }
-}
-```
-
-### Get Product by Slug
-**GET** `/api/products/:slug`
-
-Retrieve a specific product by its slug.
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "64f1a2b3c4d5e6f7a8b9c0d5",
-    "title": "UltraWireless Pro Earbuds",
-    "description": "Active noise cancellation...",
-    "price": 89.99,
-    "comparePrice": 109.99,
-    "category": "Electronics",
-    "stock": 20,
-    "status": "published",
-    "slug": "ultrawireless-pro-earbuds",
-    "images": [
-      {
-        "url": "https://example.com/image.jpg",
-        "publicId": "image_id",
-        "isPrimary": true
-      }
-    ],
-    "store": {
-      "_id": "64f1a2b3c4d5e6f7a8b9c0d2",
-      "name": "Apex Tech Store",
-      "slug": "apex-tech-store"
-    },
-    "averageRating": 4.5,
-    "reviewCount": 2
-  }
-}
-```
-
-### Create Product
-**POST** `/api/products`
-
-Create a new product (vendor only).
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Request Body:**
-```json
-{
-  "title": "New Product",
-  "description": "Product description",
-  "price": 29.99,
-  "comparePrice": 39.99,
-  "category": "Electronics",
-  "stock": 50,
-  "lowStockThreshold": 10,
-  "status": "published",
-  "images": [
-    {
-      "url": "https://example.com/image.jpg",
-      "publicId": "image_id",
-      "isPrimary": true
-    }
-  ]
-}
-```
-
-**Response (201):**
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "64f1a2b3c4d5e6f7a8b9c0d6",
-    "title": "New Product",
-    "description": "Product description",
-    "price": 29.99,
-    "comparePrice": 39.99,
-    "category": "Electronics",
-    "stock": 50,
-    "lowStockThreshold": 10,
-    "status": "published",
-    "slug": "new-product",
-    "images": [
-      {
-        "url": "https://example.com/image.jpg",
-        "publicId": "image_id",
-        "isPrimary": true
-      }
-    ],
-    "store": "64f1a2b3c4d5e6f7a8b9c0d2",
-    "createdBy": "64f1a2b3c4d5e6f7a8b9c0d3",
-    "averageRating": 0,
-    "reviewCount": 0
-  }
-}
-```
-
-### Update Product
-**PATCH** `/api/products/:id`
-
-Update a product (vendor only, product owner).
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Request Body:**
-```json
-{
-  "title": "Updated Product Title",
-  "price": 34.99,
-  "stock": 45
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "64f1a2b3c4d5e6f7a8b9c0d6",
-    "title": "Updated Product Title",
-    "description": "Product description",
-    "price": 34.99,
-    "comparePrice": 39.99,
-    "category": "Electronics",
-    "stock": 45,
-    "lowStockThreshold": 10,
-    "status": "published",
-    "slug": "updated-product-title",
-    "images": [
-      {
-        "url": "https://example.com/image.jpg",
-        "publicId": "image_id",
-        "isPrimary": true
-      }
-    ],
-    "store": "64f1a2b3c4d5e6f7a8b9c0d2",
-    "createdBy": "64f1a2b3c4d5e6f7a8b9c0d3",
-    "averageRating": 0,
-    "reviewCount": 0
-  }
-}
-```
-
-### Update Product Stock
-**PATCH** `/api/products/:id/stock`
-
-Update product stock quantity (vendor only, product owner).
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Request Body:**
-```json
-{
-  "stock": 100
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "64f1a2b3c4d5e6f7a8b9c0d6",
-    "stock": 100
-  }
-}
-```
-
-### Delete Product
-**DELETE** `/api/products/:id`
-
-Delete a product (vendor only, product owner).
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "message": "Product deleted successfully"
-}
-```
-
-### Get Categories
-**GET** `/api/products/categories`
-
-Retrieve all unique product categories.
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": ["Electronics", "Office", "Grocery", "Clothing"]
+  "product": "64f1a2b3c4d5e6f7a8b9c0d5",
+  "rating": 5,
+  "comment": "Great quality."
 }
 ```
 
 ## Orders
 
-### Create Order
-**POST** `/api/orders`
+| Method | Path | Access | Purpose |
+| --- | --- | --- | --- |
+| POST | `/orders` | Customer | Create one order per store represented in the cart |
+| GET | `/orders/my-orders` | Customer or vendor | Customer sees own orders; vendor sees own store orders |
+| GET | `/orders/:id` | Customer, vendor, admin | Fetch an order if authorized |
+| PATCH | `/orders/:id/status` | Owning vendor | Advance order status |
 
-Create a new order (customer only).
+Order creation requires published products from active stores with enough stock. Items from multiple stores are split into separate orders.
 
-**Headers:**
+Allowed vendor status transitions:
+
+```text
+pending -> processing -> shipped -> delivered
 ```
-Authorization: Bearer <token>
-```
 
-**Request Body:**
+`cancelled` and `delivered` are terminal states in the current API.
+
+## Payments
+
+| Method | Path | Access | Purpose |
+| --- | --- | --- | --- |
+| POST | `/payments/create-intent` | Customer | Create or reuse a pending Stripe payment intent for the customer's order |
+| POST | `/payments/confirm-mock` | Customer | Confirm mock payment when `PAYMENT_MOCK_MODE=true` |
+| GET | `/payments/:id` | Payment owner or admin | Fetch payment details |
+| POST | `/payments/webhook` | Stripe | Handle Stripe webhook events with raw body signature verification |
+
+Payment intent body:
+
 ```json
 {
-  "items": [
-    {
-      "product": "64f1a2b3c4d5e6f7a8b9c0d5",
-      "quantity": 2
-    }
-  ],
-  "shippingAddress": {
-    "fullName": "John Doe",
-    "address": "123 Main St",
-    "city": "Springfield",
-    "state": "IL",
-    "zipCode": "62704",
-    "phone": "555-0199"
-  }
+  "orderId": "64f1a2b3c4d5e6f7a8b9c0d7"
 }
 ```
 
-**Response (201):**
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "64f1a2b3c4d5e6f7a8b9c0d7",
-    "customer": "64f1a2b3c4d5e6f7a8b9c0d1",
-    "store": "64f1a2b3c4d5e6f7a8b9c0d2",
-    "items": [
-      {
-        "product": "64f1a2b3c4d5e6f7a8b9c0d5",
-        "title": "UltraWireless Pro Earbuds",
-        "price": 89.99,
-        "quantity": 2,
-        "image": "https://example.com/image.jpg"
-      }
-    ],
-    "subtotal": 179.98,
-    "totalAmount": 179.98,
-    "shippingAddress": {
-      "fullName": "John Doe",
-      "address": "123 Main St",
-      "city": "Springfield",
-      "state": "IL",
-      "zipCode": "62704",
-      "phone": "555-0199"
-    },
-    "paymentStatus": "pending",
-    "orderStatus": "pending",
-    "createdAt": "2024-01-15T10:30:00.000Z"
-  }
-}
-```
+## Uploads
 
-### Get My Orders
-**GET** `/api/orders/my-orders`
+| Method | Path | Access | Purpose |
+| --- | --- | --- | --- |
+| POST | `/uploads/image` | Vendor | Upload one image file via multipart field `image` |
 
-Retrieve orders for the authenticated user (customer or vendor).
+Supported file types: JPEG, PNG, WebP, GIF. Maximum file size: 5 MB. Cloudinary credentials must be configured for uploads to succeed.
 
-**Headers:**
-```
-Authorization: Bearer <token>
-```
+## Analytics
 
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "_id": "64f1a2b3c4d5e6f7a8b9c0d7",
-      "items": [
-        {
-          "product": "64f1a2b3c4d5e6f7a8b9c0d5",
-          "title": "UltraWireless Pro Earbuds",
-          "price": 89.99,
-          "quantity": 2,
-          "image": "https://example.com/image.jpg"
-        }
-      ],
-      "totalAmount": 179.98,
-      "paymentStatus": "paid",
-      "orderStatus": "processing",
-      "createdAt": "2024-01-15T10:30:00.000Z",
-      "store": {
-        "_id": "64f1a2b3c4d5e6f7a8b9c0d2",
-        "name": "Apex Tech Store"
-      }
-    }
-  ]
-}
-```
-
-### Get Order by ID
-**GET** `/api/orders/:id`
-
-Retrieve a specific order (customer, vendor, or admin).
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "64f1a2b3c4d5e6f7a8b9c0d7",
-    "customer": {
-      "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
-      "name": "John Doe",
-      "email": "john@example.com"
-    },
-    "store": {
-      "_id": "64f1a2b3c4d5e6f7a8b9c0d2",
-      "name": "Apex Tech Store"
-    },
-    "items": [
-      {
-        "product": "64f1a2b3c4d5e6f7a8b9c0d5",
-        "title": "UltraWireless Pro Earbuds",
-        "price": 89.99,
-        "quantity": 2,
-        "image": "https://example.com/image.jpg"
-      }
-    ],
-    "totalAmount": 179.98,
-    "shippingAddress": {
-      "fullName": "John Doe",
-      "address": "123 Main St",
-      "city": "Springfield",
-      "state": "IL",
-      "zipCode": "62704",
-      "phone": "555-0199"
-    },
-    "paymentStatus": "paid",
-    "orderStatus": "processing",
-    "createdAt": "2024-01-15T10:30:00.000Z"
-  }
-}
-```
-
-### Update Order Status
-**PATCH** `/api/orders/:id/status`
-
-Update order status (vendor only, store owner).
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Request Body:**
-```json
-{
-  "orderStatus": "shipped"
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "64f1a2b3c4d5e6f7a8b9c0d7",
-    "orderStatus": "shipped",
-    "updatedAt": "2024-01-15T11:00:00.000Z"
-  }
-}
-```
+| Method | Path | Access | Purpose |
+| --- | --- | --- | --- |
+| GET | `/analytics/overview` | Vendor | Fetch summary metrics, monthly revenue/order data, inventory counts, and recent orders for the vendor's store |
 
 ## Admin
 
-### Get Admin Dashboard
-**GET** `/api/admin/dashboard`
+All admin routes are guarded by `protect` and `authorize('admin')`.
 
-Retrieve platform-wide statistics (admin only).
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "totalUsers": 150,
-    "totalVendors": 25,
-    "totalStores": 25,
-    "totalProducts": 500,
-    "totalOrders": 1000,
-    "totalRevenue": 50000,
-    "activeVendors": 20,
-    "pendingStores": 3
-  }
-}
-```
-
-### Get Vendors
-**GET** `/api/admin/vendors`
-
-Retrieve all vendors (admin only).
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "_id": "64f1a2b3c4d5e6f7a8b9c0d3",
-      "name": "Maya Chen",
-      "email": "maya@example.com",
-      "status": "active",
-      "createdAt": "2024-01-01T00:00:00.000Z"
-    }
-  ]
-}
-```
-
-### Update Vendor Status
-**PATCH** `/api/admin/vendors/:id/status`
-
-Update vendor status (admin only).
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Request Body:**
-```json
-{
-  "status": "suspended"
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "64f1a2b3c4d5e6f7a8b9c0d3",
-    "status": "suspended"
-  }
-}
-```
-
-### Get Stores
-**GET** `/api/admin/stores`
-
-Retrieve all stores (admin only).
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "_id": "64f1a2b3c4d5e6f7a8b9c0d2",
-      "name": "Apex Tech Store",
-      "slug": "apex-tech-store",
-      "status": "active",
-      "owner": {
-        "_id": "64f1a2b3c4d5e6f7a8b9c0d3",
-        "name": "Maya Chen"
-      }
-    }
-  ]
-}
-```
-
-### Update Store Status
-**PATCH** `/api/admin/stores/:id/status`
-
-Update store status (admin only).
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Request Body:**
-```json
-{
-  "status": "suspended"
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "64f1a2b3c4d5e6f7a8b9c0d2",
-    "status": "suspended"
-  }
-}
-```
-
-### Get Users
-**GET** `/api/admin/users`
-
-Retrieve all users (admin only).
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
-      "name": "John Doe",
-      "email": "john@example.com",
-      "role": "customer",
-      "status": "active",
-      "createdAt": "2024-01-15T10:30:00.000Z"
-    }
-  ]
-}
-```
-
-### Update User Status
-**PATCH** `/api/admin/users/:id/status`
-
-Update user status (admin only).
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Request Body:**
-```json
-{
-  "status": "suspended"
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "64f1a2b3c4d5e6f7a8b9c0d1",
-    "status": "suspended"
-  }
-}
-```
-
-## Error Responses
-
-All endpoints may return error responses in the following format:
-
-```json
-{
-  "success": false,
-  "message": "Error description"
-}
-```
-
-Common HTTP status codes:
-- `400` - Bad Request (validation error, invalid input)
-- `401` - Unauthorized (missing or invalid token)
-- `403` - Forbidden (insufficient permissions)
-- `404` - Not Found (resource doesn't exist)
-- `500` - Internal Server Error
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/admin/dashboard` | Platform statistics and recent activity |
+| GET | `/admin/vendors` | Paginated vendor list with search/status filters |
+| PATCH | `/admin/vendors/:id/status` | Activate or suspend a vendor; cascades to that vendor's store |
+| GET | `/admin/stores` | Paginated store list with search/status filters |
+| PATCH | `/admin/stores/:id/status` | Activate or suspend a store directly |
+| GET | `/admin/users` | Paginated user list with search/role filters |
+| PATCH | `/admin/users/:id/status` | Activate or suspend a user; vendor status syncs to store |
 
 ## Rate Limiting
 
-The API implements rate limiting on authentication endpoints:
-- Register: 5 requests per 15 minutes per IP
-- Login: 10 requests per 15 minutes per IP
+Authentication endpoints are rate-limited in memory:
 
-Rate limit headers are included in responses:
-- `X-RateLimit-Limit`: Request limit per window
-- `X-RateLimit-Remaining`: Remaining requests in window
-- `X-RateLimit-Reset`: Unix timestamp when limit resets
+| Endpoint | Limit |
+| --- | --- |
+| `/auth/login` | 8 attempts per 15 minutes per IP/email combination |
+| `/auth/register` | 5 attempts per hour per IP |
+
+For smoke tests only, `RATE_LIMIT_BYPASS_KEY` can be set on the backend and sent as `x-bypass-rate-limit`.

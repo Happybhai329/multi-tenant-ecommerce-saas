@@ -1,5 +1,6 @@
 import Review from '../models/Review.js'
 import Product from '../models/Product.js'
+import Store from '../models/Store.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
 
 // Helper function to update product rating stats
@@ -48,6 +49,12 @@ const createReview = asyncHandler(async (req, res) => {
     throw new Error('Product not found')
   }
 
+  const store = await Store.findById(product.store).select('status')
+  if (product.status !== 'published' || store?.status !== 'active') {
+    res.status(400)
+    throw new Error('This product is not available for review')
+  }
+
   // Check if user already reviewed
   const alreadyReviewed = await Review.findOne({
     customer: req.user._id,
@@ -78,6 +85,18 @@ const createReview = asyncHandler(async (req, res) => {
 // @route   GET /api/reviews/product/:productId
 // @access  Public
 const getProductReviews = asyncHandler(async (req, res) => {
+  const product = await Product.findById(req.params.productId).select('status store')
+  if (!product) {
+    res.status(404)
+    throw new Error('Product not found')
+  }
+
+  const store = await Store.findById(product.store).select('status')
+  if (product.status !== 'published' || store?.status !== 'active') {
+    res.status(404)
+    throw new Error('Product not found')
+  }
+
   const reviews = await Review.find({ product: req.params.productId })
     .populate('customer', 'name')
     .sort('-createdAt')
