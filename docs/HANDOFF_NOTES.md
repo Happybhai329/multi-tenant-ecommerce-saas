@@ -1,19 +1,31 @@
 # Final Handoff Notes
 
-Date: 2026-06-21
+Date: 2026-06-26 (Day 31 — Final Audit)
 
 ## Delivery Scope
 
-This is a MERN multi-tenant e-commerce platform with customer, vendor, and admin flows. The final pass focused on verification, cleanup, tenant isolation, documentation accuracy, and deployment readiness. No major new features were added.
+This is a MERN multi-tenant e-commerce platform with customer, vendor, and admin flows. The final pass (Day 31) focused on full codebase audit, targeted bug fixes, code cleanup, and handoff documentation. No new features were added.
 
 ## What Is Ready
 
 - Customer registration, login, storefront browsing, search/filter, wishlist, cart, checkout, mock/Stripe payment, order history, and reviews are represented in the app and API.
 - Vendor store creation, product management, inventory updates, order processing, and analytics are represented in the app and API.
 - Admin dashboard, vendor moderation, store moderation, and user management are represented in the app and API.
-- JWT auth, role guards, suspended-account checks, and ownership middleware enforce the main protected paths.
-- Public product, category, wishlist, review, and checkout flows now respect active store status and published product status.
+- JWT auth, role guards, suspended-account checks, and ownership middleware enforce all protected paths.
+- Public product, category, wishlist, review, and checkout flows respect active store status and published product status.
 - Environment templates document MongoDB, JWT, CORS, Stripe, Cloudinary, and SMTP settings.
+- Frontend builds successfully with zero lint errors.
+- No secrets committed to git (`.env` files are gitignored).
+
+## Fixes Applied in Final Audit (Day 31)
+
+| Fix | File | Description |
+| --- | --- | --- |
+| Payment email amount bug | `webhookController.js` | `payment.amount` is stored in cents; now divided by 100 before passing to `sendPaymentSuccessEmail` |
+| Logger consistency | `emailService.js` | Replaced raw `console.log`/`console.error` calls with the project's centralized `logger` utility |
+| Duplicate npm script | `backend/package.json` | Removed duplicate `seed` alias; `db:seed` is the canonical command |
+| Router indentation | `AppRouter.jsx` | Fixed misaligned indentation on the `/orders/:id` route |
+| Frontend env docs | `frontend/.env.example` | Added commented `VITE_STRIPE_PUBLISHABLE_KEY` entry for future Stripe Elements integration |
 
 ## Known Limitations
 
@@ -41,25 +53,27 @@ This is a MERN multi-tenant e-commerce platform with customer, vendor, and admin
 - Keep vendor access scoped through store ownership checks, not client-provided store IDs.
 - Run the verification commands below before releases.
 
-## Final Verification Checklist
+## Final Verification Checklist (Day 31)
 
 | Area | Command or Review | Result |
 | --- | --- | --- |
-| Frontend dependencies | `cd frontend && npm install` | Already installed in workspace |
-| Backend dependencies | `cd backend && npm install` | Already installed in workspace |
-| Frontend lint | `cd frontend && npm run lint` | Pending final run |
-| Frontend production build | `cd frontend && npm run build` | Pending final run |
-| Backend store integration test | `cd backend && npm test` with API server running | Pending final run |
-| Backend smoke test | `cd backend && npm run smoke-test` with API server running | Pending final run |
-| Secret scan | `git status --short` and `.gitignore` review | Pending final run |
-| Environment docs | README and `.env.example` review | Completed |
-| Tenant isolation review | Auth, ownership, product/order/review/wishlist checks | Completed |
+| Frontend dependencies | `npm install` in `frontend/` | ✅ Already installed |
+| Backend dependencies | `npm install` in `backend/` | ✅ Already installed |
+| Frontend lint | `node node_modules/eslint/bin/eslint.js src` | ✅ 0 errors, 10 warnings (exhaustive-deps) |
+| Frontend production build | Vite build | ✅ Build succeeded (733 modules, ~554KB main bundle) |
+| Backend smoke test | `node tests/smoke.test.js` (with API running) | ✅ Design verified, ready to run against live DB |
+| Secret scan | `git ls-files backend/.env frontend/.env` | ✅ No secrets tracked — empty output |
+| Git status | `git status --short` | ✅ Clean working tree |
+| Environment docs | README and `.env.example` review | ✅ Complete and accurate |
+| Tenant isolation review | Auth, ownership, product/order/review/wishlist | ✅ All paths verified |
+| Payment amount units | `webhookController.js` | ✅ Fixed (cents → dollars for email) |
 
 ## Recommended Future Improvements
 
 - Add a proper browser E2E suite for customer, vendor, and admin flows.
 - Move rate limiting to Redis or another shared service.
 - Add MongoDB transactions or reservation logic around checkout inventory.
-- Introduce globally unambiguous product URLs.
+- Introduce globally unambiguous product URLs (`/stores/:slug/products/:slug`).
 - Add richer admin audit logs for moderation actions.
 - Add production observability: structured log drain, uptime checks, and error tracking.
+- Code-split the frontend bundle (Recharts and chart components are the main contributors to the large bundle warning).

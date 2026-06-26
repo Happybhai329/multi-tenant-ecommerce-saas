@@ -97,7 +97,7 @@ async function handlePaymentSuccess(paymentIntent) {
     })
 
     if (order.customer && order.customer.email) {
-      sendPaymentSuccessEmail(order.customer.email, payment.amount, order.orderNumber)
+      sendPaymentSuccessEmail(order.customer.email, payment.amount / 100, order.orderNumber)
         .catch((err) => logger.warn('Failed to send payment success email', {
           orderId: order._id,
           error: err.message,

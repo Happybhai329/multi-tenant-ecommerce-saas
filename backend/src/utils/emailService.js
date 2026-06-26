@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer'
 import env from '../config/env.js'
+import logger from './logger.js'
 
 // Configure reusable transporter
 // We initialize lazily or fallback to Ethereal if no SMTP_HOST is provided
@@ -19,7 +20,7 @@ const createTransporter = async () => {
     })
   } else {
     // Fallback to ethereal for local testing
-    console.log('ℹ No SMTP config found. Creating Ethereal test account...')
+    logger.info('No SMTP config found. Creating Ethereal test account...')
     const testAccount = await nodemailer.createTestAccount()
     transporter = nodemailer.createTransport({
       host: 'smtp.ethereal.email',
@@ -48,16 +49,16 @@ const sendMail = async (options) => {
       html: options.html,
     })
 
-    console.log(`✅ Email sent: ${info.messageId}`)
-    
-    // Log ethereal url if it's a test account
+    logger.info('Email sent', { messageId: info.messageId })
+
+    // Log ethereal preview URL if it's a test account
     if (!env.smtpHost || !env.smtpUser) {
-      console.log(`📧 Preview URL: ${nodemailer.getTestMessageUrl(info)}`)
+      logger.info('Ethereal preview URL', { previewUrl: nodemailer.getTestMessageUrl(info) })
     }
 
     return { success: true, messageId: info.messageId }
   } catch (error) {
-    console.error(`❌ Error sending email: ${error.message}`)
+    logger.error('Error sending email', { error: error.message })
     return { success: false, error: error.message }
   }
 }

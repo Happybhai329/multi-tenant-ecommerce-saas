@@ -88,7 +88,7 @@ function AppRouter() {
               </ProtectedRoute>
             }
           />
-            <Route
+          <Route
             path="/orders/:id"
             element={
               <ProtectedRoute allowedRoles={['customer']}>
